@@ -9,7 +9,7 @@ process MOVE_VIS {
             5: 'no metafits file in job directory',
             6: 'could not create target directory',
         ][task.exitStatus] ?: 'unknown'
-        println "Task ${task.hash} failed with code ${task.exitStatus}: ${failure_reason}."
+        println "Task ${task.hash} failed with code ${task.exitStatus}: ${failure_reason}"
         return 'terminate'
     }
     

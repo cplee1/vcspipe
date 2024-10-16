@@ -9,9 +9,8 @@ process MOVE_VOLT {
             5: 'could not copy metafits files to the target directory',
             6: 'could not move data files to the target directory',
             7: 'data file format not recognised',
-            
         ][task.exitStatus] ?: 'unknown'
-        println "Task ${task.hash} failed with code ${task.exitStatus}: ${failure_reason}."
+        println "Task ${task.hash} failed with code ${task.exitStatus}: ${failure_reason}"
         return 'terminate'
     }
     
