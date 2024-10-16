@@ -3,10 +3,10 @@ process GS_VIS {
 
     errorStrategy {
         if ( task.exitStatus == 75 ) {
-            log.info("ASVO jobs are not ready. Exiting.")
+            log.info("ASVO jobs are not ready")
             return 'ignore'
         } else {
-            log.info("Task ${task.hash} failed with code ${task.exitStatus}. Exiting.")
+            log.info("Task ${task.hash} failed with code ${task.exitStatus}")
             return 'terminate'
         }
     }
@@ -23,23 +23,19 @@ process GS_VIS {
     """
     export MWA_ASVO_API_KEY='${params.asvo_api_key}'
 
-    # Submit job and supress failure if job already exists
-    ${params.giant_squid} submit-vis -v \\
-        --delivery scratch \\
-        -- ${obsid} \\
-        || true
-
-    ${params.giant_squid} list -j \\
-        --types DownloadVisibilities \\
-        --states Ready \\
-        -- ${obsid} \\
-        | ${params.jq} -r '.[]|[.jobId,.files[0].filePath//"",.files[0].fileSize//""]|@csv' \\
-        | sort -r \\
+    # Check if job is ready
+    ${params.giant_squid} list ${obsid} -j --types DownloadVisibilities --states Ready \\
+        | ${params.jq} -r '.[]|[.jobId,.files[0].filePath//""]|@csv' \\
         | tee ready.tsv
+    [[ \$(cat ready.tsv | wc -l) == 1 ]] && exit 0
 
-    if [[ "\$(cat ready.tsv | wc -l)" == 0 ]]; then
-        echo "ASVO jobs are not ready. Exiting."
-        exit 75
-    fi
+    # Check if job is queued or processing
+    ${params.giant_squid} list ${obsid} -j --types DownloadVisibilities --states Queued,Processing \\
+        | ${params.jq} -r '.[]|[.jobId,.jobState]|@csv' \\
+        | tee processing.tsv
+    [[ \$(cat processing.tsv | wc -l) == 1 ]] && exit 75
+
+    # Submit job
+    ${params.giant_squid} submit-vis ${obsid} -v -d scratch
     """
 }
