@@ -53,5 +53,7 @@ process GS_VOLT {
         # Submit job
         ${params.giant_squid} submit-volt ${obsid} -v -d scratch -o \$offset -u \$dur_per_job
     done
+
+    exit 75
     """
 }
