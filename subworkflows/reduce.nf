@@ -24,9 +24,7 @@ workflow REDUCE {
 
     PARSE_TARGETS.out.names_pointings
         .splitCsv(header: true)
-        .collate(
-            { params.vdif ? Integer.valueOf(1) : Integer.valueOf(params.num_beams) }
-        )
+        .collate(Integer.valueOf(params.num_beams), remainder = true)
         // Input array:      [ [name0, pointing0], ..., [nameN, pointingN] ]
         // Transposed array: [ [name0, ..., nameN], [pointing0, ..., pointingN] ]
         .map { GroovyCollections.transpose(it) }
