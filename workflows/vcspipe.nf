@@ -5,7 +5,6 @@
 */
 
 include { DOWNLOAD  } from '../subworkflows/download'
-include { CALIBRATE } from '../subworkflows/calibrate'
 include { REDUCE    } from '../subworkflows/reduce'
 
 /*
