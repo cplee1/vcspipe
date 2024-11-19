@@ -17,7 +17,7 @@ include { REDUCE    } from '../subworkflows/reduce'
 workflow VCSPIPE {
 
     if (params.cluster == null) {
-        System.err.println("ERROR: Cluster not specified.")
+        error("cluster not specified")
     }
 
     if (params.cluster != null) {
