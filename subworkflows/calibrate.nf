@@ -1,4 +1,0 @@
-workflow CALIBRATE {
-
-    println "TODO"
-}

@@ -23,13 +23,7 @@ workflow VCSPIPE {
     if (params.cluster != null) {
         if (params.download) {
             DOWNLOAD ()
-        }
-
-        if (params.calibrate) {
-           CALIBRATE ()
-        }
-
-        if (params.reduce) {
+        } else if (params.reduce) {
             REDUCE ()
         }
     }
