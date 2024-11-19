@@ -4,9 +4,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { DOWNLOAD  } from '../subworkflows/local/download'
-include { CALIBRATE } from '../subworkflows/local/calibrate'
-include { REDUCE    } from '../subworkflows/local/reduce'
+include { DOWNLOAD  } from '../subworkflows/download'
+include { CALIBRATE } from '../subworkflows/calibrate'
+include { REDUCE    } from '../subworkflows/reduce'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
