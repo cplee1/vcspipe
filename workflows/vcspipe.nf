@@ -15,16 +15,22 @@ include { REDUCE    } from '../subworkflows/reduce'
 */
 
 workflow VCSPIPE {
-    
-    if (params.download) {
-        DOWNLOAD ()
+
+    if (params.cluster == null) {
+        System.err.println("ERROR: Cluster not specified.")
     }
 
-    if (params.calibrate) {
-       CALIBRATE ()
-    }
+    if (params.cluster != null) {
+        if (params.download) {
+            DOWNLOAD ()
+        }
 
-    if (params.reduce) {
-       REDUCE ()
+        if (params.calibrate) {
+           CALIBRATE ()
+        }
+
+        if (params.reduce) {
+            REDUCE ()
+        }
     }
 }

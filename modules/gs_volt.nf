@@ -1,4 +1,5 @@
 process GS_VOLT {
+    label 'giantsquid'
     tag "${obsid}"
 
     errorStrategy {
@@ -11,8 +12,6 @@ process GS_VOLT {
         }
     }
 
-    beforeScript 'module load singularity/3.7.4'
-
     input:
     val(obsid)
     val(offset)
@@ -24,17 +23,15 @@ process GS_VOLT {
 
     script:
     """
-    export MWA_ASVO_API_KEY='${params.asvo_api_key}'
-
     # Check if the correct number of jobs are ready
-    ${params.giant_squid} list ${obsid} -j --types DownloadVoltage --states Ready \\
-        | ${params.jq} -r '.[]|[.jobId,.files[0].filePath//""]|@csv' \\
+    giant-squid list ${obsid} -j --types DownloadVoltage --states Ready \\
+        | jq -r '.[]|[.jobId,.files[0].filePath//""]|@csv' \\
         | tee ready.tsv
     [[ \$(cat ready.tsv | wc -l) == "${num_jobs}" ]] && exit 0
 
     # Check if jobs are queued or processing
-    ${params.giant_squid} list ${obsid} -j --types DownloadVoltage --states Queued,Processing \\
-        | ${params.jq} -r '.[]|[.jobId,.jobState]|@csv' \\
+    giant-squid list ${obsid} -j --types DownloadVoltage --states Queued,Processing \\
+        | jq -r '.[]|[.jobId,.jobState]|@csv' \\
         | tee processing.tsv
     [[ \$(cat processing.tsv | wc -l) == "${num_jobs}" ]] && exit 75
 
@@ -51,7 +48,7 @@ process GS_VOLT {
         offset=\$(( ${offset} + \$dur_per_job * i ))
 
         # Submit job
-        ${params.giant_squid} submit-volt ${obsid} -v -d scratch -o \$offset -u \$dur_per_job
+        giant-squid submit-volt ${obsid} -v -d scratch -o \$offset -u \$dur_per_job
     done
 
     exit 75
