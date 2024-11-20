@@ -19,7 +19,6 @@ process VCSBEAM {
 
     output:
     path('*.tar'), emit: beamformed_data
-    eval("make_mwa_tied_array_beam -V | awk '{print \$3}'"), emit: version
 
     script:
     """
@@ -40,8 +39,8 @@ process VCSBEAM {
     while IFS=' ' read -r name pointing; do
         mkdir "\$name"
         mv *"\$pointing"* "\$name"
-        tar cvf "\${name}${output_flag}.tar" "\$name"
-        [[ -d "\$name" ]] && rm -r "\$name"
+        echo "Tarring files for target: \$name"
+        tar cvf "\${name}${output_flag}.tar" --remove-files "\$name"
     done < ${names_pointings}
     """
 }

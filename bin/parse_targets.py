@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.9"
 # dependencies = [
@@ -131,13 +132,12 @@ def main() -> None:
         except ValueError:
             logger.warning(f"Cannot format coordinates for target: {target}")
             continue
-        pointing = f"{raj}_{decj}"
-        entry = [target, pointing]
+        entry = [target, raj, decj]
         entries.append(entry)
 
     with open(args.outfile, "w") as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=",")
-        spamwriter.writerow(["name", "pointing"])
+        spamwriter.writerow(["name", "raj", 'decj'])
         for entry in entries:
             spamwriter.writerow(entry)
 

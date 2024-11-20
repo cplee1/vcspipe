@@ -16,14 +16,14 @@ include { REDUCE    } from '../subworkflows/reduce'
 workflow VCSPIPE {
 
     if (params.cluster == null) {
-        error("cluster not specified")
-    }
-
-    if (params.cluster != null) {
+        error("Cluster profile not specified.")
+    } else {
         if (params.download) {
             DOWNLOAD ()
         } else if (params.reduce) {
             REDUCE ()
+        } else {
+            error("Pipeline mode not specified. Please use either '--download' or '--reduce'.")
         }
     }
 }

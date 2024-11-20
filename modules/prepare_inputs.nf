@@ -1,7 +1,7 @@
 process PREPARE_INPUTS {
 
     input:
-    tuple val(names), val(pointings)
+    tuple val(names), val(rajs), val(decjs)
 
     output:
     tuple path('names_pointings.txt'), path('pointings.txt'), emit: pointings
@@ -9,11 +9,12 @@ process PREPARE_INPUTS {
     script:
     """
     names=("${names instanceof Collection ? names.join('" "') : names}")
-    pointings=("${pointings instanceof Collection ? pointings.join('" "') : pointings}")
+    rajs=("${rajs instanceof Collection ? rajs.join('" "') : rajs}")
+    decjs=("${decjs instanceof Collection ? decjs.join('" "') : decjs}")
 
     for (( idx=0; idx<\${#names[@]}; idx++ )); do
-        echo "\${names[idx]} \${pointings[idx]}" >> names_pointings.txt
-        echo "\${pointings[idx]}" >> pointings.txt
+        echo "\${names[idx]} \${rajs[idx]}_\${decjs[idx]}" >> names_pointings.txt
+        echo "\${rajs[idx]} \${decjs[idx]}" >> pointings.txt
     done
     """
 }
