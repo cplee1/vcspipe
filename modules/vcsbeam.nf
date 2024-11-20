@@ -40,7 +40,7 @@ process VCSBEAM {
         mkdir "\$name"
         mv *"\$pointing"* "\$name"
         echo "Tarring files for target: \$name"
-        tar cvf "\${name}${output_flag}.tar" --remove-files "\$name"
+        tar cvf "\${name}.tar" --remove-files "\$name"
     done < ${names_pointings}
     """
 }
