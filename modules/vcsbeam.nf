@@ -2,8 +2,11 @@ process VCSBEAM {
     label 'cluster'
 
     publishDir = [
-        path: { "${params.vcs_dir}/${params.obsid}/pointings" },
-        mode: 'link'
+        path: { "${pubdir}" },
+        saveAs: { filename ->
+            def filepath = file(filename)
+            return "${filepath.baseName}/${filepath.baseName}_${output_flag ? 'VDIF' : 'PSRFITS'}.tar" },
+        mode: 'link',
     ]
 
     input:
@@ -16,6 +19,7 @@ process VCSBEAM {
     val(cal_metafits)
     val(cal_solution)
     val(output_flag)
+    val(pubdir)
 
     output:
     path('*.tar'), emit: beamformed_data
@@ -34,7 +38,7 @@ process VCSBEAM {
         -C ${cal_solution} \\
         -P ${pointings} \\
         -R NONE -U 0,0 -O -X -s \\
-        ${output_flag}
+        ${output_flag ? '-v' : '-p'}
 
     while IFS=' ' read -r name pointing; do
         mkdir "\$name"

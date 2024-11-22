@@ -1,8 +1,15 @@
 process PREPFOLD {
     label 'cluster'
 
+    publishDir = [
+        path: { "${pubdir}/prepfold" },
+        mode: 'link'
+    ]
+
+    errorStrategy 'ignore'
+
     input:
-    tuple val(label), path(parfile), path(data)
+    tuple val(label), path(parfile), path(data), val(pubdir)
     val(nbin)
     val(nsub)
     val(npart)

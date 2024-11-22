@@ -1,8 +1,13 @@
 process DSPSR {
     label 'cluster'
 
+    publishDir = [
+        path: { "${pubdir}/dspsr" },
+        mode: 'link'
+    ]
+
     input:
-    tuple val(label), path(parfile), path(data)
+    tuple val(label), path(parfile), path(data), val(pubdir)
     val(nbin)
     val(nfine)
     val(ncoarse)

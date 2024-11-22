@@ -34,9 +34,9 @@ workflow REDUCE {
         .splitCsv(skip: 1)
         .collate(Integer.valueOf(params.num_beams), remainder = true)
         .map { GroovyCollections.transpose(it) }
-        .set { ch_names_pointings }
+        .set { ch_names_ra_dec }
 
-    PREPARE_INPUTS(ch_names_pointings)
+    PREPARE_INPUTS(ch_names_ra_dec)
     
     VCSBEAM (
         PREPARE_INPUTS.out.pointings,
@@ -47,7 +47,8 @@ workflow REDUCE {
         file("${params.vcs_dir}/${params.obsid}/${params.obsid}.metafits", checkIfExists: true),
         file("${params.vcs_dir}/${params.obsid}/cal/${params.calid}/${params.calid}.metafits", checkIfExists: true),
         file("${params.vcs_dir}/${params.obsid}/cal/${params.calid}/hyperdrive/hyperdrive_solutions.bin", checkIfExists: true),
-        params.vdif ? '-v' : '-p',
+        params.vdif,
+        file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}", type: 'dir')
     )
 
     if (params.dspsr || params.prepfold) {
@@ -60,8 +61,9 @@ workflow REDUCE {
 
         UNTAR(ch_beamformed_data)
 
-        ch_names_pointings
+        ch_names_ra_dec
             .map { it[0] }
+            .flatten()
             .set { ch_names }
 
         GET_EPHEMERIS(ch_names)
@@ -70,6 +72,8 @@ workflow REDUCE {
             .cross(UNTAR.out.data)
             // map to ["name", Path("/path/to/name.eph"), Path(data)]
             .map { [ it[0][0], it[0][1], it[1][1] ] }
+            // map to  ["name", Path("/path/to/name.eph"), Path(data), Path(pubdir)]
+            .map { name, ephem, data -> [ name, ephem, data, file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}/${name}", type: 'dir') ] }
             .set { ch_fold_input }
 
         if (params.dspsr) {
@@ -85,6 +89,9 @@ workflow REDUCE {
             DSPSR.out.archive
                 // map to ["name", Path("/path/to/name.ar")]
                 .map { [it.baseName, it] }
+                .cross(ch_fold_input)
+                // map to  ["name", Path("/path/to/name.ar"), Path(pubdir)]
+                .map { [ it[0][0], it[0][1], it[1][3] ] }
                 .set { ch_archives }
 
             PAV (ch_archives)
@@ -92,14 +99,21 @@ workflow REDUCE {
             if (params.pdmp) {
                 PDMP (
                     ch_archives,
-                    ch_fold_input.map { it[0] },
                     Integer.valueOf(params.max_chans),
                     Integer.valueOf(params.max_subints),
                 )
 
+                ch_fold_input
+                    // map to ["name_pdmp", Path(pubdir)]
+                    .map { [ "${it[0]}_pdmp", it[3] ]}
+                    .set { ch_pdmp_pubdir }
+
                 PDMP.out.archive
                     // map to ["name_pdmp", Path("/path/to/name_pdmp.ar")]
                     .map { [it.baseName, it] }
+                    .cross(ch_pdmp_pubdir)
+                    // map to  ["name_pdmp", Path("/path/to/name_pdmp.ar"), Path(pubdir)]
+                    .map { [ it[0][0], it[0][1], it[1][1] ] }
                     .set { ch_pdmp_archives }
 
                 PAV_PDMP (ch_pdmp_archives)

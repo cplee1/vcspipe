@@ -1,8 +1,13 @@
 process PAV {
     label 'cluster'
 
+    publishDir = [
+        path: { "${pubdir}/pav" },
+        mode: 'link'
+    ]
+
     input:
-    tuple val(label), path(archive)
+    tuple val(label), path(archive), val(pubdir)
     
     output:
     path('*.png'), emit: plots
