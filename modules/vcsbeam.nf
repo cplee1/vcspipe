@@ -28,7 +28,7 @@ process VCSBEAM {
     """
     make_mwa_tied_array_beam -V
 
-    make_mwa_tied_array_beam \\
+    srun -n \$SLURM_NTASKS make_mwa_tied_array_beam \\
         -b +${offset} \\
         -T ${duration} \\
         -f ${low_chan} \\
