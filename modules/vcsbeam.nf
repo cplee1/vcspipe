@@ -42,9 +42,9 @@ process VCSBEAM {
 
     while IFS=' ' read -r name pointing; do
         mkdir "\$name"
-        mv *"\$pointing"* "\$name"
+        mv *"_\${pointing}_"* "\$name"
         echo "Tarring files for target: \$name"
-        tar cvf "\${name}.tar" --remove-files "\$name"
+        tar cvf ./"\${name}.tar" --remove-files "\$name"
     done < ${names_pointings}
     """
 }
