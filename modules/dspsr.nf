@@ -32,7 +32,7 @@ process DSPSR {
                 "\$hdrfile"
             arfiles+=("\${hdrfile%.hdr}.ar")
         done
-        psradd -R -o "${label}" \${arfiles[@]}
+        psradd -R -o "${label}.ar" \${arfiles[@]}
         rm \${arfiles[@]}
         """
     else
