@@ -8,10 +8,22 @@ process GET_EPHEMERIS {
 
     script:
     """
-    parfile='/software/projects/mwavcs/cplee/resources/mtpa_par_files/${name}.par'
-    if [[ -f "\$parfile" ]]; then
-        cp "\$parfile" "${name}.eph"
+    ephem_dir="\${MYSOFTWARE}/resources/mtpa_par_files"
+    ephem_file="\${ephem_dir}/${name}.par"
+
+    if [[ -r "\$ephem_file" ]]; then
+        cp "\$ephem_file" "${name}.eph"
+        exit 0
     else
+        echo "Could not find ephemeris in MPTA list."
+    fi
+
+    echo "Retreiving ephemeris from PSRCAT..."
+    psrcat -v
+    psrcat -e "${name}" > "${name}.eph"
+
+    if [[ ! -z $(grep WARNING "${name}.eph") ]]; then
+        echo "Could not find pulsar in PSRCAT."
         exit 1
     fi
     """

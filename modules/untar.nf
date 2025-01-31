@@ -9,6 +9,6 @@ process UNTAR {
 
     script:
     """
-    tar xvf ${tarball}
+    tar xvmf ${tarball}
     """
 }

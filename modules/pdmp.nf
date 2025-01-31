@@ -19,6 +19,7 @@ process PDMP {
     script:
     """
     pdmp \\
+        -ds 0.001 \\
         -g '${label}_pdmp.png'/png \\
         '${archive}' \\
         | tee '${label}_pdmp.log'

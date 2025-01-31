@@ -26,7 +26,7 @@ process DSPSR {
                 -U 8192 \\
                 -E ${parfile} \\
                 -b ${nbin} \\
-                -F ${nfine}:D -K \\
+                -F ${nfine}:D \\
                 -L ${tint} -A \\
                 -O "\${hdrfile%.hdr}" \\
                 "\$hdrfile"
@@ -34,6 +34,7 @@ process DSPSR {
         done
         psradd -R -o "${label}.ar" \${arfiles[@]}
         rm \${arfiles[@]}
+        pam -D -m "${label}.ar"
         """
     else
         """
