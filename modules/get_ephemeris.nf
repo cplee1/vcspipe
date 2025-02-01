@@ -22,7 +22,7 @@ process GET_EPHEMERIS {
     psrcat -v
     psrcat -e "${name}" > "${name}.eph"
 
-    if [[ ! -z $(grep WARNING "${name}.eph") ]]; then
+    if [[ ! -z \$(grep WARNING "${name}.eph") ]]; then
         echo "Could not find pulsar in PSRCAT."
         exit 1
     fi
