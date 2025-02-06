@@ -1,10 +1,10 @@
 process PREPARE_INPUTS {
 
     input:
-    tuple val(names), val(rajs), val(decjs)
+    tuple val(interval), val(names), val(rajs), val(decjs)
 
     output:
-    tuple path('names_pointings.txt'), path('pointings.txt'), emit: pointings
+    tuple val(interval), path('names_pointings.txt'), path('pointings.txt'), emit: pointings
 
     script:
     """

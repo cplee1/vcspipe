@@ -24,25 +24,46 @@ include { PREPFOLD        } from '../modules/prepfold'
 
 workflow REDUCE {
 
+    // Input should be a space-separated string of target@begin-end
     Channel
+        // Split up targets
         .of(params.targets.split(' '))
-        .collect()
+        // Split up names from times
+        .map { str -> str.split('@') }
+        .map { tup -> [ tup[1], tup[0] ] }
         .set { ch_targets }
 
-    PARSE_TARGETS(ch_targets)
+    ch_targets
+        .groupTuple()
+        .set { ch_intervals }
+
+    PARSE_TARGETS(ch_intervals)
 
     PARSE_TARGETS.out.names_pointings
         .splitCsv(skip: 1)
-        .collate(Integer.valueOf(params.num_beams), remainder = true)
-        .map { GroovyCollections.transpose(it) }
-        .set { ch_names_ra_dec }
+        // [interval, name, ra, dec]
+        .map { tup -> [tup[0], [tup[1], tup[2], tup[3]]] }
+        // [interval, [name, ra, dec]]
+        .groupTuple(size: Integer.valueOf(params.num_beams), remainder: true)
+        // [interval, [[name, ra, dec], ...]
+        .map { tup -> [tup[0], GroovyCollections.transpose(tup[1])] }
+        // [interval, [[name, ...], [ra, ...], [dec, ...]]]
+        .map { tup -> [tup[0], tup[1][0], tup[1][1], tup[1][2]] }
+        // [interval, [name, ...], [ra, ...], [dec, ...]]
+        .set { ch_interval_names_ra_dec }
 
-    PREPARE_INPUTS(ch_names_ra_dec)
+    PREPARE_INPUTS(ch_interval_names_ra_dec)
+
+    PREPARE_INPUTS.out.pointings
+        // [interval, names_pointings.txt, pointings.txt]
+        .map { tup -> [tup[0].split('-'), tup[1], tup[2]] }
+        // [[begin, end], names_pointings.txt, pointings.txt]
+        .map { tup -> [Integer.valueOf(tup[0][0]), Integer.valueOf(tup[0][1]), tup[1], tup[2]] }
+        // [begin, end, names_pointings.txt, pointings.txt]
+        .set { ch_pointings }
     
     VCSBEAM (
-        PREPARE_INPUTS.out.pointings,
-        Integer.valueOf(params.offset),
-        Integer.valueOf(params.duration),
+        ch_pointings,
         Integer.valueOf(params.low_chan),
         file("${params.vcs_dir}/${params.obsid}/combined", type: 'dir', checkIfExists: true),
         file("${params.vcs_dir}/${params.obsid}/${params.obsid}.metafits", checkIfExists: true),
@@ -53,6 +74,7 @@ workflow REDUCE {
 
     TAR (
         VCSBEAM.out.beamformed_data,
+        Integer.valueOf(params.obsid),
         params.vdif,
         file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}", type: 'dir')
     )

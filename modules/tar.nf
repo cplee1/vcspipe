@@ -10,7 +10,8 @@ process TAR {
     ]
 
     input:
-    tuple path(names_pointings), path(beamformed_data)
+    tuple val(begin_offset), val(end_offset), path(names_pointings), path(beamformed_data)
+    val(obsid)
     val(output_flag)
     val(pubdir)
 
@@ -32,7 +33,8 @@ process TAR {
         
         # Tar up the directory and remove the hardlinked data files
         echo "Tarring files for target: \$name"
-        tar cvf ./"\${name}.tar" --remove-files "\$name"/ &
+        label="\${name}_${obsid}_${begin_offset}_${end_offset}"
+        tar cvf ./"\${label}.tar" --remove-files "\$name"/ &
         pids+=(\$!)
 
         # Check if the number of jobs exceeds the number of tasks/cpus

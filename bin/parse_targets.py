@@ -90,6 +90,13 @@ def main() -> None:
         default="names_pointings.csv",
         help="The name of the output CSV file.",
     )
+    parser.add_argument(
+        "-l",
+        "--label",
+        type=str,
+        default="no_label",
+        help="A label to give the pulsars in the output file.",
+    )
     args = parser.parse_args()
     logger = logging.getLogger(__name__)
 
@@ -132,12 +139,12 @@ def main() -> None:
         except ValueError:
             logger.warning(f"Cannot format coordinates for target: {target}")
             continue
-        entry = [target, raj, decj]
+        entry = [args.label, target, raj, decj]
         entries.append(entry)
 
     with open(args.outfile, "w") as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=",")
-        spamwriter.writerow(["name", "raj", 'decj'])
+        spamwriter.writerow(["label", "name", "raj", 'decj'])
         for entry in entries:
             spamwriter.writerow(entry)
 

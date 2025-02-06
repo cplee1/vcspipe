@@ -2,9 +2,7 @@ process VCSBEAM {
     label 'cluster'
 
     input:
-    tuple path(names_pointings), path(pointings)
-    val(offset)
-    val(duration)
+    tuple val(begin_offset), val(end_offset), path(names_pointings), path(pointings)
     val(low_chan)
     val(data_dir)
     val(vcs_metafits)
@@ -13,15 +11,15 @@ process VCSBEAM {
     val(output_flag)
 
     output:
-    tuple path(names_pointings), path('*.{hdr,vdif,fits}'), emit: beamformed_data
+    tuple val(begin_offset), val(end_offset), path(names_pointings), path('*.{hdr,vdif,fits}'), emit: beamformed_data
 
     script:
     """
     make_mwa_tied_array_beam -V
 
     srun make_mwa_tied_array_beam \\
-        -b +${offset} \\
-        -T ${duration} \\
+        -b +${begin_offset} \\
+        -T \$((${end_offset} - ${begin_offset})) \\
         -f ${low_chan} \\
         -d ${data_dir} \\
         -m ${vcs_metafits} \\
