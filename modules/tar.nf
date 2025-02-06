@@ -1,4 +1,4 @@
-process POST_VCSBEAM {
+process TAR {
     label 'cluster'
 
     publishDir = [
@@ -36,7 +36,7 @@ process POST_VCSBEAM {
         pids+=(\$!)
 
         # Check if the number of jobs exceeds the number of tasks/cpus
-        if [[ \${pids[@]} -ge \$SLURM_NTASKS ]]; then
+        if [[ \${#pids[@]} -ge \$SLURM_NTASKS ]]; then
             echo "Waiting for PID \${pids[0]}"
             wait "\${pids[0]}"
             pids=("\${pids[@]:1}")
