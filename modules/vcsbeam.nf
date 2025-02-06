@@ -1,14 +1,6 @@
 process VCSBEAM {
     label 'cluster'
 
-    publishDir = [
-        path: { "${pubdir}" },
-        saveAs: { filename ->
-            def filepath = file(filename)
-            return "${filepath.baseName}/${filepath.baseName}_${output_flag ? 'VDIF' : 'PSRFITS'}.tar" },
-        mode: 'link',
-    ]
-
     input:
     tuple path(names_pointings), path(pointings)
     val(offset)
@@ -19,10 +11,9 @@ process VCSBEAM {
     val(cal_metafits)
     val(cal_solution)
     val(output_flag)
-    val(pubdir)
 
     output:
-    path('*.tar'), emit: beamformed_data
+    tuple path(names_pointings), path('*.{hdr,vdif,fits}'), emit: beamformed_data
 
     script:
     """
@@ -39,12 +30,5 @@ process VCSBEAM {
         -P ${pointings} \\
         -R NONE -U 0,0 -O -X -s \\
         ${output_flag ? '-v' : '-p'}
-
-    while IFS=' ' read -r name pointing; do
-        mkdir "\$name"
-        mv *"_\${pointing}_"* "\$name"
-        echo "Tarring files for target: \$name"
-        tar cvf ./"\${name}.tar" --remove-files "\$name"
-    done < ${names_pointings}
     """
 }

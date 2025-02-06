@@ -7,6 +7,7 @@
 include { PARSE_TARGETS   } from '../modules/parse_targets'
 include { PREPARE_INPUTS  } from '../modules/prepare_inputs'
 include { VCSBEAM         } from '../modules/vcsbeam'
+include { POST_VCSBEAM    } from '../modules/post_vcsbeam'
 include { UNTAR           } from '../modules/untar'
 include { GET_EPHEMERIS   } from '../modules/get_ephemeris'
 include { DSPSR           } from '../modules/dspsr'
@@ -47,13 +48,18 @@ workflow REDUCE {
         file("${params.vcs_dir}/${params.obsid}/${params.obsid}.metafits", checkIfExists: true),
         file("${params.vcs_dir}/${params.obsid}/cal/${params.calid}/${params.calid}.metafits", checkIfExists: true),
         file("${params.vcs_dir}/${params.obsid}/cal/${params.calid}/hyperdrive/hyperdrive_solutions.bin", checkIfExists: true),
+        params.vdif
+    )
+
+    POST_VCSBEAM (
+        VCSBEAM.out.beamformed_data,
         params.vdif,
         file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}", type: 'dir')
     )
 
     if (params.dspsr || params.prepfold) {
         // Post-process beamformed data
-        VCSBEAM.out.beamformed_data
+        POST_VCSBEAM.out.tarballs
             .flatten()
             // map to ["name", Path("/path/to/name.tar")]
             .map { [it.baseName, it] }
