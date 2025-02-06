@@ -18,7 +18,7 @@ include { MOVE_VOLT } from '../modules/move_volt'
 workflow DOWNLOAD {
 
     if (params.calid != null) {
-        GS_VIS (params.calid)
+        GS_VIS (Integer.valueOf(params.calid))
 
         GS_VIS.out.jobs
             .splitCsv()
@@ -30,10 +30,10 @@ workflow DOWNLOAD {
 
     if (params.obsid != null) {
         GS_VOLT (
-            params.obsid,
-            params.offset,
-            params.duration,
-            params.num_dl_jobs
+            Integer.valueOf(params.obsid),
+            Integer.valueOf(params.offset),
+            Integer.valueOf(params.duration),
+            Integer.valueOf(params.num_dl_jobs)
         )
 
         GS_VOLT.out.jobs
