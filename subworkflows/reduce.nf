@@ -30,10 +30,10 @@ workflow REDUCE {
         .of(params.targets.split(' '))
         // Split up names from times
         .map { str -> str.split('@') }
-        .map { tup -> [ tup[1], tup[0] ] }
         .set { ch_targets }
 
     ch_targets
+        .map { tup -> [ tup[1], tup[0] ] }
         .groupTuple()
         .set { ch_intervals }
 
@@ -83,14 +83,15 @@ workflow REDUCE {
         // Post-process beamformed data
         TAR.out.tarballs
             .flatten()
-            // map to ["name", Path("/path/to/name.tar")]
-            .map { [it.baseName, it] }
+            // map to ["name", Path("/path/to/name_obsid_begin_end.tar")]
+            // assume that the name does not have any underscores
+            .map { [ it.baseName.split('_')[0], it ] }
             .set { ch_beamformed_data }
 
         UNTAR(ch_beamformed_data)
 
-        ch_names_ra_dec
-            .map { it[0] }
+        ch_interval_names_ra_dec
+            .map { it[1] }
             .flatten()
             .set { ch_names }
 
@@ -100,8 +101,11 @@ workflow REDUCE {
             .cross(UNTAR.out.data)
             // map to ["name", Path("/path/to/name.eph"), Path(data)]
             .map { [ it[0][0], it[0][1], it[1][1] ] }
+            .cross(ch_targets)
+            // map to ["name", "begin_end", Path("/path/to/name.eph"), Path(data)]
+            .map { [ it[0][0], it[1][1].replace('-', '_'), it[0][1], it[0][2] ] }
             // map to  ["name", Path("/path/to/name.eph"), Path(data), Path(pubdir)]
-            .map { name, ephem, data -> [ name, ephem, data, file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}/${name}", type: 'dir') ] }
+            .map { name, interval, ephem, data -> [ name, ephem, data, file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}/${name}_${params.obsid}_${interval}", type: 'dir') ] }
             .set { ch_fold_input }
 
         if (params.dspsr) {
