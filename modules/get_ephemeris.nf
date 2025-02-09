@@ -19,7 +19,7 @@ process GET_EPHEMERIS {
     fi
 
     echo "Retreiving ephemeris from PSRCAT..."
-    psrcat -v
+    psrcat -v || true
     psrcat -e "${name}" > "${name}.eph"
 
     if [[ ! -z \$(grep WARNING "${name}.eph") ]]; then
