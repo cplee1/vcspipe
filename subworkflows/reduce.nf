@@ -157,20 +157,14 @@ workflow REDUCE {
             CLFD (ch_archives)
 
             CLFD.out.clfd_archive
-                .view()
-
-            CLFD.out.clfd_archive
                 // input: Path('/path/to/name.ar.clfd'), ...
-                .map { [ it.baseName, it ] }
+                .map { [ it.simpleName, it ] }
                 // => ['name', Path('/path/to/name.ar.clfd')], ...
                 .cross(ch_fold_input)
                 // => [['name', Path('/path/to/name.ar.clfd')], ['name', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
                 .map { [ it[0][0], it[0][1], it[1][3] ] }
                 // => ['name', Path('/path/to/name.ar.clfd'), Path('/path/to/pubdir')]
                 .set { ch_clfd_archives }
-
-            ch_clfd_archives
-                .view()
 
             PAV (ch_clfd_archives)
 
