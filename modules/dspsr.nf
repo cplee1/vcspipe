@@ -7,7 +7,7 @@ process DSPSR {
     ]
 
     input:
-    tuple val(label), path(parfile), path(data), val(pubdir)
+    tuple val(name), path(parfile), path(data), val(pubdir)
     val(nbin)
     val(nfine)
     val(ncoarse)
@@ -15,7 +15,7 @@ process DSPSR {
     val(is_vdif)
 
     output:
-    path("${label}.ar"), emit: archive
+    path("${name}.ar"), emit: archive
 
     script:
     if (is_vdif)
@@ -32,9 +32,9 @@ process DSPSR {
                 "\$hdrfile"
             arfiles+=("\${hdrfile%.hdr}.ar")
         done
-        psradd -R -o "${label}.ar" \${arfiles[@]}
+        psradd -R -o "${name}.ar" \${arfiles[@]}
         rm \${arfiles[@]}
-        pam -D -m "${label}.ar"
+        pam -D -m "${name}.ar"
         """
     else
         """
@@ -46,7 +46,7 @@ process DSPSR {
             -b ${nbin} \\
             -F ${nfine*ncoarse}:D -K \\
             -L ${tint} -A \\
-            -O "${label}" \\
+            -O "${name}" \\
             *.fits
         """
 }
