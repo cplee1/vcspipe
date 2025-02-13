@@ -22,7 +22,9 @@ process TAR {
     """
     pids=()
     while IFS=' ' read -r name pointing; do
-        dirname="\${name}_${obsid}_${begin_offset}_${end_offset}"
+        begin_offset=\$(printf "%04d" '${begin_offset}')
+        end_offset=\$(printf "%04d" '${end_offset}')
+        dirname="\${name}_${obsid}_\${begin_offset}_\${end_offset}"
 
         # Create a directory containing hardlinks to the data files
         echo "Creating directory: \${dirname}/"
