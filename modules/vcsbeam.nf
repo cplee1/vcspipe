@@ -18,7 +18,7 @@ process VCSBEAM {
     make_mwa_tied_array_beam -V
 
     srun make_mwa_tied_array_beam \\
-        -b +${begin_offset} \\
+        -b \$((${params.obsid} + ${begin_offset})) \\
         -T \$((${end_offset} - ${begin_offset})) \\
         -f ${low_chan} \\
         -d ${data_dir} \\
