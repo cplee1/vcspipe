@@ -20,12 +20,16 @@ process DSPSR {
     script:
     if (is_vdif)
         """
+        nbin=$(get_optimal_nbin ${parfile} ${nbin} ${nfine} 1)
+        rv=$?
+        [[ rv != 0 ]] && exit $rv
+
         arfiles=()
         for hdrfile in *.hdr; do
             dspsr \\
                 -U 8192 \\
                 -E ${parfile} \\
-                -b ${nbin} \\
+                -b \$nbin \\
                 -F ${nfine}:D \\
                 -L ${tint} -A \\
                 -O "\${hdrfile%.hdr}" \\
@@ -38,12 +42,16 @@ process DSPSR {
         """
     else
         """
+        nbin=$(get_optimal_nbin ${parfile} ${nbin} ${nfine} ${ncoarse})
+        rv=$?
+        [[ rv != 0 ]] && exit $rv
+
         dspsr \\
             -cont \\
             -scloffs \\
             -U 8192 \\
             -E ${parfile} \\
-            -b ${nbin} \\
+            -b \$nbin \\
             -F ${nfine*ncoarse}:D -K \\
             -L ${tint} -A \\
             -O "${name}" \\

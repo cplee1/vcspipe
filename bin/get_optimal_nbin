@@ -1,0 +1,53 @@
+#/usr/bin/bash
+
+if [[ $# != 4 ]]; then
+    echo "Error: Wrong number of input arguments."
+    echo "Usage: $0 <parfile> <nbin_limit> <nfine> <ncoarse>"
+    exit 1
+fi
+
+parfile="$1"
+nbin_limit="$2"
+nfine="$3" # number of fine channels per coarse channel
+ncoarse="$4" # number of coarse channels
+
+if [[ ! -f "$parfile" ]]; then
+    echo "Error: parfile does not exist: $parfile"
+    exit 1
+fi
+
+# Get the spin frequency from the parfile
+spin_freq=$(grep 'F0' "$parfile" | awk '{print $2}')
+if [[ -z "$spin_freq" ]]; then
+    echo "Error: Could not find spin frequency in par file: $parfile"
+    exit 1
+fi
+
+# Fine channel bandwidth
+bwfine=$(echo "$ncoarse * 1.28 * 10^6 / $nfine" | bc -l)
+
+# Maximum number of phase bins based on sampling rate
+nbin_max=$(echo "$bwfine / $spin_freq" | bc)
+
+# Find the highest factor of 2 less than $nbin_max
+nbin=2
+while [[ nbin -lt nbin_max ]]; do
+    nbin=$((nbin*2))
+done
+nbin=$((nbin/2))
+
+# Error checking
+if [[ nbin -eq 1 ]]; then
+    echo "Error: Could not compute the number of phase bins."
+    exit 1
+fi
+
+# Limit the number of bins
+if [[ nbin -gt nbin_limit ]]; then
+    nbin="$nbin_limit"
+fi
+
+echo "$nbin"
+
+exit 0
+
