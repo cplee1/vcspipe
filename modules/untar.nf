@@ -5,7 +5,7 @@ process UNTAR {
     tuple val(name), path(tarball)
 
     output:
-    tuple val(name), path("${name}/*"), emit: data
+    tuple val(name), path("${name}*/*"), emit: data
 
     script:
     """

@@ -10,7 +10,8 @@ process TAR {
     ]
 
     input:
-    tuple path(names_pointings), path(beamformed_data)
+    tuple val(begin_offset), val(end_offset), path(names_pointings), path(beamformed_data)
+    val(obsid)
     val(output_flag)
     val(pubdir)
 
@@ -21,18 +22,22 @@ process TAR {
     """
     pids=()
     while IFS=' ' read -r name pointing; do
+        begin_offset=\$(printf "%04d" '${begin_offset}')
+        end_offset=\$(printf "%04d" '${end_offset}')
+        dirname="\${name}_${obsid}_\${begin_offset}_\${end_offset}"
+
         # Create a directory containing hardlinks to the data files
-        echo "Creating directory: \${name}/"
-        mkdir "\$name"
+        echo "Creating directory: \${dirname}/"
+        mkdir "\$dirname"
         echo "Linking files for target: \$name"
         datafiles=(*"_\${pointing}_"*)
         for ((ii=0; ii<\${#datafiles[@]}; ii++)); do
-            ln -L \${datafiles[ii]} "\$name"/
+            ln -L \${datafiles[ii]} "\$dirname"/
         done
         
         # Tar up the directory and remove the hardlinked data files
         echo "Tarring files for target: \$name"
-        tar cvf ./"\${name}.tar" --remove-files "\$name"/ &
+        tar cvf ./"\${dirname}.tar" --remove-files "\$dirname"/ &
         pids+=(\$!)
 
         # Check if the number of jobs exceeds the number of tasks/cpus
