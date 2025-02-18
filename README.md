@@ -143,4 +143,4 @@ nextflow run -latest cplee1/vcspipe \
     --targets '00:34:08.87_-07:21:53.40@0-600 00:36:15.01_-10:33:14.2@0-600'
 ```
 
-The data products will be published into `$vcs_dir/$obsid/pointings_${timestamp}/`.
+The data products will be published into `$vcs_dir/$obsid/pointings_${timestamp}/` where `$timestamp` has the form `yyyy-MM-dd_HH-mm-ss`.
