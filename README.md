@@ -2,7 +2,7 @@
 A Nextflow-based pipeline for reducing and processing MWA-VCS data.
 
 ## Installation
-This pipeline is configured for use with Nextflow's inbuilt pipeline sharing feature. If you are using Pawsey's Setonix cluster, a configuration file has been made, and the pipeline can be run as-is. Otherwise, you will need to create a custom configuration file, using `conf/setonix.config` as a template.
+This pipeline is configured for use with Nextflow's inbuilt pipeline sharing feature. If you are using Pawsey's Setonix cluster, a configuration file has been made, and the pipeline can be run as-is. Otherwise, you will need to create a custom configuration file (using `conf/setonix.config` as a template).
 
 Before using the pipeline, you must set up a Python virtual environment. On Setonix, this should be done as follows:
 ```bash
@@ -22,12 +22,20 @@ nextflow run -latest cplee1/vcspipe -profile [PROFILES,...] [OPTIONS ...]
 where `[PROFILES,...]` is a comma-separated list of Nextflow profiles defined in `nextflow.config`, and `[OPTIONS ...]` are the pipeline options, each of which begins with a double hypen (e.g. `--nbin 64`). The pipeline options only parse a single command line argument, so options with multiple inputs must be enclosed in quotes. For example, `--targets PSR1 PSR2` will only parse `'PSR1'`, whereas `--targets 'PSR1 PSR2'` will parse the string `'PSR1 PSR2'`.
 
 ## Workflows
-Currently the pipeline contains two separate workflows: `--download` and `--reduce`. **One and only one of these workflows must be selected upon pipeline execution.** The `--download` mode is for requesting ASVO downloads and moving the downloaded files into the required directory structure. The `--reduce` mode is for beamforming and post-processing pulsar observations.
+Currently the pipeline contains two separate workflows: `--download` and `--reduce`. **One and only one of these workflows must be selected upon pipeline execution.** The `--download` workflow is for requesting ASVO downloads and moving the downloaded files into the required directory structure. The `--reduce` workflow is for beamforming and post-processing pulsar observations.
 
 ### Download Workflow
+Before you use the download pipeline, ensure that you have defined the `$MWA_ASVO_API_KEY` environment variable.
+
 A typical execution of the `--download` workflow looks like:
 ```bash
-nextflow run -latest cplee1/vcspipe -profile setonix -download --obsid OBSID --offset OFFSET --duration DURATION --num_dl_jobs NUMJOBS
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix \
+    --download \
+    --obsid OBSID \
+    --offset OFFSET \
+    --duration DURATION \
+    --num_dl_jobs NUMJOBS
 ```
 where `--obsid` is the MWA observation ID, `--offset` and `--duration` are the data download offset and duration (in seconds) to request from the ASVO, and `--num_dl_jobs` is the number of ASVO jobs to split the data download into. **Note that the individual job sizes (`$duration/$num_dl_jobs`) must be a multiple of 8 seconds, or ASVO will return an error.**
 
@@ -38,12 +46,27 @@ An example workflow on Setonix may look like:
 # Environment setup
 module load nextflow/24.04.3
 module load giant-squid/1.0.3
+
 # First execution (queue ASVO jobs)
-nextflow run -latest cplee1/vcspipe -profile setonix --download --obsid 1267459328 --offset 0 --duration 1200 --num_dl_jobs 2
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix \
+    --download \
+    --obsid 1267459328 \
+    --offset 0 \
+    --duration 1200 \
+    --num_dl_jobs 2
+
 # Wait until the download is completed
 giant-squid list
+
 # Second execution (move files to $vcs_dir/$obsid)
-nextflow run -latest cplee1/vcspipe -profile setonix --download --obsid 1267459328 --offset 0 --duration 1200 --num_dl_jobs 2
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix \
+    --download \
+    --obsid 1267459328 \
+    --offset 0 \
+    --duration 1200 \
+    --num_dl_jobs 2
 ```
 
 ### Reduce Workflow
@@ -65,15 +88,27 @@ In both cases, you must specify whether you want the pipeline to process the dat
 
 A typical pulsar-mode `--reduce` execution for PSRFITS data looks like:
 ```bash
-nextflow run -latest cplee1/vcspipe -profile setonix,psrfits --obsid OBSID --low_chan LOWCHAN --num_chan NUMCHAN --calid CALID --prepfold --dspsr --pdmp
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix,psrfits \
+    --obsid OBSID \
+    --low_chan LOWCHAN \
+    --num_chan NUMCHAN \
+    --calid CALID \
+    --prepfold --dspsr --pdmp
 ```
 Wheras for VDIF data a typical execution looks like:
 ```bash
-nextflow run -latest cplee1/vcspipe -profile setonix,vdif --obsid OBSID --low_chan LOWCHAN --num_chan NUMCHAN --calid CALID --dspsr --pdmp
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix,vdif \
+    --obsid OBSID \
+    --low_chan LOWCHAN \
+    --num_chan NUMCHAN \
+    --calid CALID \
+    --dspsr --pdmp
 ```
 Any or all of `--prepfold`, `--dspsr`, and `--pdmp` can be excluded, however `--pdmp` will not run without `--dspsr`. **Note that the `--reduce` flag is included in the `psrfits` and `vdif` profiles, so it does not need to be provided again.**
 
-There are several post-processing options which can be specified as pipeline options. For example `--nbin NBIN` changes the _maximum_ number of phase bins to fold into. The actual number of phase bins will be reduced if the sampling rate is insufficient for the specified time/freq resolution (this is only really applicable to millisecond pulsars). To see all available options, see the `nextflow.config` file.
+There are several post-processing pipeline options which can be specified. For example `--nbin NBIN` changes the _maximum_ number of phase bins to fold into. The actual number of phase bins will be reduced if the sampling rate is insufficient for the specified time/freq resolution (this is only really applicable to millisecond pulsars). To see all available options, see the `nextflow.config` file.
 
 For convenience, a `smart` profile has been provided which specifies the frequency setup of the SMART survey, i.e. `--low_chan 109 --num_chan 24`.
 
@@ -81,16 +116,29 @@ Lets say you want to beamform on two normal pulsars in the first 10 minutes of S
 ```bash
 # Start a new screen session
 screes -S beamforming
+
 # Environment setup
 module load nextflow/24.04.3
+
 # Run the pipeline
-nextflow run -latest cplee1/vcspipe -profile setonix,psrfits,smart --obsid 1255444104 --calid 1255443816 --targets 'J0034-0721@0-600 J0036-1033@0-600' --prepfold --dspsr --pdmp
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix,psrfits,smart \
+    --obsid 1255444104 \
+    --calid 1255443816 \
+    --targets 'J0034-0721@0-600 J0036-1033@0-600' \
+    --prepfold --dspsr --pdmp
+
 # Detach from screen session with `Ctrl+a d`
+
 # Reattach to screen session
 screen -r beamforming
 ```
 
 If you are beamforming on a pointing without any intention to post-process (such as a pulsar candidate), the command may look like:
 ```bash
-nextflow run -latest cplee1/vcspipe -profile setonix,psrfits,smart --obsid 1255444104 --calid 1255443816 --targets '00:34:08.87_-07:21:53.40@0-600 00:36:15.01_-10:33:14.2@0-600'
+nextflow run -latest cplee1/vcspipe \
+    -profile setonix,psrfits,smart \
+    --obsid 1255444104 \
+    --calid 1255443816 \
+    --targets '00:34:08.87_-07:21:53.40@0-600 00:36:15.01_-10:33:14.2@0-600'
 ```
