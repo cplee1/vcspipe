@@ -20,9 +20,9 @@ process DSPSR {
     script:
     if (is_vdif)
         """
-        nbin=$(get_optimal_nbin ${parfile} ${nbin} ${nfine} 1)
-        rv=$?
-        [[ rv != 0 ]] && exit $rv
+        nbin=\$(get_optimal_nbin ${parfile} ${nbin} ${nfine} 1)
+        rv=\$?
+        [[ rv -ne 0 ]] && exit \$rv
 
         arfiles=()
         for hdrfile in *.hdr; do
@@ -42,9 +42,9 @@ process DSPSR {
         """
     else
         """
-        nbin=$(get_optimal_nbin ${parfile} ${nbin} ${nfine} ${ncoarse})
-        rv=$?
-        [[ rv != 0 ]] && exit $rv
+        nbin=\$(get_optimal_nbin ${parfile} ${nbin} ${nfine} ${ncoarse})
+        rv=\$?
+        [[ rv -ne 0 ]] && exit \$rv
 
         dspsr \\
             -cont \\
