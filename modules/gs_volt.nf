@@ -24,13 +24,13 @@ process GS_VOLT {
     script:
     """
     # Check if the correct number of jobs are ready
-    giant-squid list ${obsid} -j --types DownloadVoltage --states Ready \\
+    giant-squid list ${obsid} -j --types download_voltage --states ready \\
         | jq -r '.[]|[.jobId,.files[0].filePath//""]|@csv' \\
         | tee ready.tsv
     [[ \$(cat ready.tsv | wc -l) == "${num_jobs}" ]] && exit 0
 
     # Check if jobs are queued or processing
-    giant-squid list ${obsid} -j --types DownloadVoltage --states Queued,Processing \\
+    giant-squid list ${obsid} -j --types download_voltage --states queued,staging,staged,retrieving,delivering \\
         | jq -r '.[]|[.jobId,.jobState]|@csv' \\
         | tee processing.tsv
     [[ \$(cat processing.tsv | wc -l) == "${num_jobs}" ]] && exit 75

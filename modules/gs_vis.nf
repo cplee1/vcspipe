@@ -21,13 +21,13 @@ process GS_VIS {
     script:
     """
     # Check if job is ready
-    giant-squid list ${obsid} -j --types DownloadVisibilities --states Ready \\
+    giant-squid list ${obsid} -j --types download_visibilities --states ready \\
         | jq -r '.[]|[.jobId,.files[0].filePath//""]|@csv' \\
         | tee ready.tsv
     [[ \$(cat ready.tsv | wc -l) == 1 ]] && exit 0
 
     # Check if job is queued or processing
-    giant-squid list ${obsid} -j --types DownloadVisibilities --states Queued,Processing \\
+    giant-squid list ${obsid} -j --types download_visibilities --states queued,staging,staged,retrieving,preprocessing,delivering \\
         | jq -r '.[]|[.jobId,.jobState]|@csv' \\
         | tee processing.tsv
     [[ \$(cat processing.tsv | wc -l) == 1 ]] && exit 75
