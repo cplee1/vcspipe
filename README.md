@@ -11,7 +11,7 @@ mkdir venvs && cd venvs
 module load python/3.11.6
 python -m venv vcspipe
 source vcspipe/bin/activate
-python -m pip install psrqpy
+python -m pip install numpy psrqpy
 ```
 
 ## Usage
