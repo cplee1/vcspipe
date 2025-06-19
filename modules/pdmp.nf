@@ -1,10 +1,7 @@
 process PDMP {
     label 'cluster'
 
-    publishDir = [
-        path: { "${pubdir}/pdmp" },
-        mode: 'link'
-    ]
+    publishDir { [path: { "${pubdir}/pdmp" }, mode: 'link'] }
 
     input:
     tuple val(name), path(archive), val(pubdir)

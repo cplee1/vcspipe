@@ -4,8 +4,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { DOWNLOAD  } from '../subworkflows/download'
-include { REDUCE    } from '../subworkflows/reduce'
+include { DOWNLOAD } from '../subworkflows/download'
+include { REDUCE   } from '../subworkflows/reduce'
+include { FOLD     } from '../subworkflows/fold'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,6 +23,8 @@ workflow VCSPIPE {
             DOWNLOAD ()
         } else if (params.reduce) {
             REDUCE ()
+        } else if (params.fold) {
+            FOLD ()
         } else {
             error("Pipeline mode not specified. Please use either '--download' or '--reduce'.")
         }
