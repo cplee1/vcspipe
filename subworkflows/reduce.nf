@@ -39,7 +39,10 @@ workflow REDUCE {
         }
     } else {
         BEAMFORM()
-        ch_targets = BEAMFORM.out.targets
+
+        BEAMFORM.out.targets
+            .map { [it[0], "${params.obsid}", it[1]] }
+            .set { ch_targets }
 
         if (params.dspsr || params.prepfold) {
             BEAMFORM.out.tarballs
@@ -60,11 +63,9 @@ workflow REDUCE {
         // Post-process beamformed data
 
         ch_targets
-            // input: ['begin-end', ['name', ...], ['ra', ...], ['dec', ...]], ...
+            // input: // => ['nameA', 'begin-end'], ['nameB', 'begin-end'], ...
             .map { it[0] }
-            // => ['name', ...], ...
-            .flatten()
-            // => 'name', ...
+            // => 'nameA', 'nameB', ...
             .set { ch_names }
 
         GET_EPHEMERIS(ch_names)
@@ -76,12 +77,12 @@ workflow REDUCE {
             .map { [ it[0][0], it[0][1], it[1][1] ] }
             // => ['name', Path('/path/to/name.eph'), Path(data)], ...
             .cross(ch_targets)
-            // => [['name', Path('/path/to/name.eph'), Path(data)], ['name', 'begin-end']], ...
-            .map { [ it[0][0], it[1][1].replace('-', '_'), it[0][1], it[0][2] ] }
+            // => [['name', Path('/path/to/name.eph'), Path(data)], ['name', 'obsid', 'begin-end']], ...
+            .map { [ it[0][0], it[1][1], it[1][2].replace('-', '_'), it[0][1], it[0][2] ] }
             // => ['name', 'begin_end', Path('/path/to/name.eph'), Path(data)], ...
-            .map { name, interval, ephem, data -> [ name, "${name}_${params.obsid}_${interval}", ephem, data ] }
-            // => ['name', 'label', Path('/path/to/name.eph'), Path(data)], ...
-            .map { name, label, ephem, data -> [ name, label, ephem, data, file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}/${label}", type: 'dir') ] }
+            .map { name, obsid, interval, ephem, data -> [ name, obsid, "${name}_${obsid}_${interval}", ephem, data ] }
+            // => ['name', 'obsid', 'label', Path('/path/to/name.eph'), Path(data)], ...
+            .map { name, obsid, label, ephem, data -> [ name, label, ephem, data, file("${params.vcs_dir}/${obsid}/pointings_${params.timestamp}/${label}", type: 'dir') ] }
             // => ['name', 'label', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
             .set { ch_fold_input }
 

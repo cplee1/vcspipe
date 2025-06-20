@@ -1,5 +1,13 @@
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    IMPORT MODULES
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+include { GET_OBS_METADATA } from '../modules/get_obs_metadata'
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
@@ -21,11 +29,9 @@ workflow STAGE_DATA {
         // => ['nameA', List<Path>], ['nameB', List<Path>], ...
         .set { ch_beamformed_data }
 
-    ch_beamformed_data
-        .map { [it[0], 'staged'] }
-        .set { ch_targets }
+    GET_OBS_METADATA(ch_beamformed_data)
 
     emit:
-    targets = ch_targets
-    data = ch_beamformed_data
+    targets = GET_OBS_METADATA.out.targets
+    data = GET_OBS_METADATA.out.beamformed_data
 }
