@@ -1,12 +1,12 @@
 process PREPFOLD {
     label 'cluster'
 
-    publishDir "${pubdir}/prepfold", mode: 'link'
+    publishDir "${pubdir}", mode: 'link'
 
     errorStrategy 'ignore'
 
     input:
-    tuple val(name), path(parfile), path(data), val(pubdir)
+    tuple val(name), val(label), path(parfile), path(data), val(pubdir)
     val(nbin)
     val(nsub)
     val(npart)
@@ -23,6 +23,7 @@ process PREPFOLD {
         -n ${nbin} \\
         -nsub ${nsub} \\
         -npart ${npart} \\
+        -o '${label}' \\
         -noxwin \\
         *.fits
     """

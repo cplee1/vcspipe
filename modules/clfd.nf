@@ -1,7 +1,7 @@
 process CLFD {
     label 'cluster'
 
-    publishDir "${pubdir}/dspsr", mode: 'link'
+    publishDir "${pubdir}", mode: 'link'
 
     input:
     tuple val(name), path(archive), val(pubdir)

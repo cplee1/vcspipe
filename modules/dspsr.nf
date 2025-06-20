@@ -1,10 +1,10 @@
 process DSPSR {
     label 'cluster'
 
-    publishDir "${pubdir}/dspsr", mode: 'link'
+    publishDir "${pubdir}", mode: 'link'
 
     input:
-    tuple val(name), path(parfile), path(data), val(pubdir)
+    tuple val(name), val(label), path(parfile), path(data), val(pubdir)
     val(nbin)
     val(nfine)
     val(ncoarse)
@@ -12,7 +12,7 @@ process DSPSR {
     val(is_vdif)
 
     output:
-    path("${name}.ar"), emit: archive
+    path("${label}.ar"), emit: archive
 
     script:
     if (is_vdif)
@@ -33,9 +33,9 @@ process DSPSR {
                 "\$hdrfile"
             arfiles+=("\${hdrfile%.hdr}.ar")
         done
-        psradd -R -o "${name}.ar" \${arfiles[@]}
+        psradd -R -o "${label}.ar" \${arfiles[@]}
         rm \${arfiles[@]}
-        pam -D -m "${name}.ar"
+        pam -D -m "${label}.ar"
         """
     else
         """
@@ -51,7 +51,7 @@ process DSPSR {
             -b \$nbin \\
             -F ${nfine*ncoarse}:D -K \\
             -L ${tint} -A \\
-            -O "${name}" \\
+            -O "${label}" \\
             *.fits
         """
 }
