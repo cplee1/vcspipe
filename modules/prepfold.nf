@@ -1,7 +1,7 @@
 process PREPFOLD {
     label 'cluster'
 
-    publishDir { [path: { "${pubdir}/prepfold" }, mode: 'link'] }
+    publishDir "${pubdir}/prepfold", mode: 'link'
 
     errorStrategy 'ignore'
 

@@ -1,15 +1,7 @@
 process TAR {
     label 'cluster'
 
-    publishDir {
-        [
-            path: { "${pubdir}" },
-            saveAs: { filename ->
-                def filepath = file(filename)
-                return "${filepath.baseName}/${filepath.baseName}_${output_flag ? 'VDIF' : 'PSRFITS'}.tar" },
-            mode: 'link',
-        ]
-    }
+    publishDir "${pubdir}", mode: 'link', saveAs: { filename -> def filepath = file(filename); return "${filepath.baseName}/${filepath.baseName}_${output_flag ? 'VDIF' : 'PSRFITS'}.tar" }
 
     input:
     tuple val(begin_offset), val(end_offset), path(names_pointings), path(beamformed_data)

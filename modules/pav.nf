@@ -1,7 +1,7 @@
 process PAV {
     label 'cluster'
 
-    publishDir { [path: { "${pubdir}/pav" }, mode: 'link'] }
+    publishDir "${pubdir}/pav", mode: 'link'
 
     input:
     tuple val(name), path(archive), val(pubdir)
