@@ -17,6 +17,7 @@ process PDMP {
     """
     pdmp \\
         -ds 0.001 \\
+        -mc 96 \\
         -g '${label}_pdmp.png'/png \\
         '${archive}' \\
         | tee '${label}_pdmp.log'
