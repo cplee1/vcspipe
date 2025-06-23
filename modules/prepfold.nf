@@ -6,7 +6,7 @@ process PREPFOLD {
     errorStrategy 'ignore'
 
     input:
-    tuple val(name), val(label), path(parfile), path(data), val(pubdir)
+    tuple val(label), path(parfile), path(data), val(pubdir)
     val(nbin)
     val(nsub)
     val(npart)

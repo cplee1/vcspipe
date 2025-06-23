@@ -4,7 +4,7 @@ process CLFD {
     publishDir "${pubdir}", mode: 'link'
 
     input:
-    tuple val(name), path(archive), val(pubdir)
+    tuple val(label), path(archive), val(pubdir)
 
     output:
     path('*.clfd'), emit: clfd_archive
