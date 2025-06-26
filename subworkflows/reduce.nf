@@ -21,6 +21,7 @@ include { PREPFOLD        } from '../modules/prepfold'
 
 include { BEAMFORM   } from './beamform'
 include { STAGE_DATA } from './stage_data'
+include { ANALYSIS   } from './analysis'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,7 +83,13 @@ workflow REDUCE {
             // => ['name', 'begin_end', Path('/path/to/name.eph'), Path(data)], ...
             .map { name, obsid, interval, ephem, data -> [ name, obsid, "${name}_${obsid}_${interval}", ephem, data ] }
             // => ['name', 'obsid', 'label', Path('/path/to/name.eph'), Path(data)], ...
-            .map { _name, obsid, label, ephem, data -> [ label, ephem, data, file("${params.vcs_dir}/${obsid}/pointings_${params.timestamp}/${label}", type: 'dir') ] }
+            .map { _name, obsid, label, ephem, data -> [ label, obsid, ephem, data, file("${params.vcs_dir}/${obsid}/pointings_${params.timestamp}/${label}", type: 'dir') ] }
+            // => ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
+            .set { ch_all_input }
+
+        ch_all_input
+            // input : ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
+            .map { [ it[0], it[2], it[3], it[4] ] }
             // => ['label', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
             .set { ch_fold_input }
 
@@ -101,8 +108,8 @@ workflow REDUCE {
                 .map { [ it.baseName, it ] }
                 // => ['label', Path('/path/to/label.ar')]
                 .cross(ch_fold_input)
-                // => [['label', Path('/path/to/label.ar')], ['label', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
-                .map { [ it[0][0], it[0][1], it[1][3] ] }
+                // => [['label', Path('/path/to/label.ar')], ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
+                .map { [ it[0][0], it[0][1], it[1][4] ] }
                 // => ['label', Path('/path/to/label.ar'), Path('/path/to/pubdir')], ...
                 .set { ch_archives }
 
@@ -113,9 +120,9 @@ workflow REDUCE {
                 .map { [ it.simpleName, it ] }
                 // => ['label', Path('/path/to/label.ar.clfd')], ...
                 .cross(ch_fold_input)
-                // => [['label', Path('/path/to/label.ar.clfd')], ['label', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
-                .map { [ it[0][0], it[0][1], it[1][3] ] }
-                // => ['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')]
+                // => [['label', Path('/path/to/label.ar.clfd')], ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
+                .map { [ it[0][0], it[0][1], it[1][4] ] }
+                // => ['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
                 .set { ch_clfd_archives }
 
             PAV (ch_clfd_archives)
@@ -127,23 +134,59 @@ workflow REDUCE {
                     Integer.valueOf(params.max_subints),
                 )
 
-                ch_fold_input
-                    // input: ['label', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
-                    .map { [ "${it[0]}_pdmp", it[3] ]}
+                ch_all_input
+                    // input: ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
+                    .map { [ "${it[0]}_pdmp", it[4] ]}
                     // => ['label_pdmp', Path('/path/to/pubdir')], ...
-                    .set { ch_pdmp_pubdir }
+                    .set { ch_label_pubdir }
 
                 PDMP.out.archive
-                    // input: Path('/path/to/label_pdmp.ar'), ...
+                    // input: Path('/path/to/label.ar.clfd.pdmp'), ...
                     .map { [ it.baseName, it ] }
-                    // => ['label_pdmp', Path('/path/to/label_pdmp.ar')], ...
-                    .cross(ch_pdmp_pubdir)
-                    // => [['label_pdmp', Path('/path/to/label_pdmp.ar')], ['label_pdmp', Path('/path/to/pubdir')]], ...
+                    // => ['label_pdmp', Path('/path/to/label.ar.clfd.pdmp')], ...
+                    .cross(ch_label_pubdir)
+                    // => [['label_pdmp', Path('/path/to/label.ar.clfd.pdmp')], ['label_pdmp', Path('/path/to/pubdir')]], ...
                     .map { [ it[0][0], it[0][1], it[1][1] ] }
-                    // => ['label_pdmp', Path('/path/to/label_pdmp.ar'), Path('/path/to/pubdir')], ...
+                    // => ['label_pdmp', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
                     .set { ch_pdmp_archives }
 
                 PAV_PDMP (ch_pdmp_archives)
+
+                if (params.fluxcal || params.rmsynth) {
+                    ch_all_input
+                        // input: ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
+                        .map { [ "${it[0]}_pdmp", it[1] ]}
+                        // => ['label_pdmp', 'obsid'], ...
+                        .set { ch_label_obsid }
+
+                    ch_pdmp_archives
+                        // input: ['label_pdmp', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
+                        .cross(ch_label_obsid)
+                        // => [['label_pdmp', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ['label_pdmp', 'obsid']], ...
+                        .map { [ it[0][0], it[1][1], it[0][1], it[0][2] ] }
+                        // => ['label_pdmp', 'obsid', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
+                        .set { ch_analysis_input }
+
+                    ANALYSIS(ch_analysis_input)
+                }
+            } else {
+                if (params.fluxcal || params.rmsynth) {
+                    ch_all_input
+                        // input: ['label', 'obsid', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
+                        .map { [ it[0], it[1] ] }
+                        // => ['label', 'obsid'], ...
+                        .set { ch_label_obsid }
+
+                    ch_clfd_archives
+                        // input: ['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
+                        .cross(ch_label_obsid)
+                        // => [['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ['label', 'obsid']], ...
+                        .map { [ it[0][0], it[1][1], it[0][1], it[0][2] ] }
+                        // => ['label', 'obsid', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
+                        .set { ch_analysis_input }
+
+                    ANALYSIS(ch_clfd_archives)
+                }
             }
         }
 
