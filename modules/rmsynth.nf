@@ -14,6 +14,7 @@ process RMSYNTH {
     script:
     """
     singularity exec -B "\$PWD" ${params.tools_cont} pu-rmsynth \\
+        -c \\
         -f 384 \\
         -n 5000 \\
         --rmres 0.1 \\
