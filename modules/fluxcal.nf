@@ -15,7 +15,7 @@ process FLUXCAL {
     """
     wget 'http://ws.mwatelescope.org/metadata/fits?obs_id=${obsid}' -O '${obsid}.metafits'
 
-    singularity exec -B "\$PWD" ${params.tools_cont} fluxcal \\
+    singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} fluxcal \\
         -m '${obsid}.metafits' \\
         -a '${archive}' \\
         --fine_res 2 \\

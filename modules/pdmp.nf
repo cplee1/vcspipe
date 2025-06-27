@@ -1,6 +1,5 @@
 process PDMP {
     label 'cluster'
-    label 'python'
 
     publishDir "${pubdir}", mode: 'link'
 
@@ -47,9 +46,8 @@ process PDMP {
     cp -L '${archive}' "\$out_archive"
 
     # Apply DM correction if needed
-    DM_err_sigma=\$(python -c "print(\$DM_corr/\$DM_err)")
-    echo "DM correction significance = \$DM_corr_sigma sigma"
-    if [[ DM_err_sigma -gt 2 ]]; then
+    DM_err_sigma=\$(python -c "print(abs(int(\$DM_corr/\$DM_err*100)))")
+    if [[ DM_err_sigma -gt 200 ]]; then
         echo "Updating the DM"
         pam -d "\$DM" -m "\$out_archive"
     else

@@ -25,7 +25,7 @@ workflow ANALYSIS {
     if (params.rmsynth) {
         ch_analysis_input
             // input: ['label', 'obsid', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
-            .map { [ it[0], it[2], it[3], it[4] ] }
+            .map { [ it[0], it[2], it[3] ] }
             // => ['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
             .set { ch_rmsynth_input }
 
