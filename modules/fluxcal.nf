@@ -20,6 +20,7 @@ process FLUXCAL {
         -a '${archive}' \\
         --fine_res 2 \\
         --coarse_res 10 \\
+        --max_pix_per_job 1000000 \\
         --nfreq 4 \\
         --ntime 4 \\
         --bw_flagged 0.125 \\
