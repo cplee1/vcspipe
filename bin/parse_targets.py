@@ -144,7 +144,7 @@ def main() -> None:
 
     with open(args.outfile, "w") as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=",")
-        spamwriter.writerow(["label", "name", "raj", 'decj'])
+        spamwriter.writerow(["label", "name", "raj", "decj"])
         for entry in entries:
             spamwriter.writerow(entry)
 
