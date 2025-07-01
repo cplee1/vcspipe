@@ -12,7 +12,7 @@ from astropy.time import Time
 def main() -> None:
     epoch_mjd = float(sys.argv[1])
     epoch = Time(epoch_mjd, format="mjd")
-    print(int(epoch.gps))
+    print(round(epoch.gps))
 
 
 if __name__ == "__main__":
