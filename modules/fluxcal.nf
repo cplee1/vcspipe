@@ -7,8 +7,7 @@ process FLUXCAL {
     tuple val(label), val(obsid), val(archive), val(pubdir)
 
     output:
-    path('inputs.toml'), emit: inputs
-    path('results.toml'), emit: results
+    tuple val(label), path('inputs.toml'), path('results.toml'), emit: results
     path('*.png'), emit: plots
 
     script:
