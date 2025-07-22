@@ -17,7 +17,6 @@ process TAR {
 
     script:
     """
-    pids=()
     while IFS=' ' read -r name pointing; do
         begin_offset=\$(printf "%04d" '${begin_offset}')
         end_offset=\$(printf "%04d" '${end_offset}')
@@ -34,15 +33,8 @@ process TAR {
         
         # Tar up the directory and remove the hardlinked data files
         echo "Tarring files for target: \$name"
-        tar cvf ./"\${dirname}.tar" --remove-files "\$dirname"/ &
-        pids+=(\$!)
-
-        # Check if the number of jobs exceeds the number of tasks/cpus
-        if [[ \${#pids[@]} -ge \$SLURM_NTASKS ]]; then
-            echo "Waiting for PID \${pids[0]}"
-            wait "\${pids[0]}"
-            pids=("\${pids[@]:1}")
-        fi
+        srun -N 1 -n 1 -c 1 --mem=8G --exact \\
+            tar cvf ./"\${dirname}.tar" --remove-files "\$dirname"/ &
     done < ${names_pointings}
 
     wait

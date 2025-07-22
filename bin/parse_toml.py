@@ -43,6 +43,11 @@ def main() -> None:
         required=True,
         help="The dictionary key of the item to print.",
     )
+    parser.add_argument(
+        "-u",
+        action="store_true",
+        help="Interpret the dictionary entries in a [value, str(unit)] format.",
+    )
     args = parser.parse_args()
 
     with open(args.toml, "rb") as f:
@@ -52,7 +57,10 @@ def main() -> None:
         print(f"key not in dict: {args.key}")
         exit(1)
 
-    print(qty_dict[args.key][0])
+    if args.u:
+        print(qty_dict[args.key][0])
+    else:
+        print(qty_dict[args.key])
 
 
 if __name__ == "__main__":

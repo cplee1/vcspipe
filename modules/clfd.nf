@@ -12,10 +12,7 @@ process CLFD {
 
     script:
     """
-    threads_per_core=\$(lscpu | grep 'Thread(s) per core' | awk '{print \$4}')
-    [[ ! -z "\$threads_per_core" ]] || exit 1
-    [[ ! "\$threads_per_core" =~ [^0-9] ]] || exit 1
-
-    clfd -o . -p \$((SLURM_CPUS_PER_TASK * threads_per_core)) ${archive}
+    srun -N 1 -n 1 -c \$SLURM_CPUS_PER_TASK -m block:block:block \\
+        clfd -p \$SLURM_CPUS_PER_TASK -o . ${archive}
     """
 }

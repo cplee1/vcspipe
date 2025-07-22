@@ -1,7 +1,7 @@
 process DSPSR {
     label 'cluster'
 
-    publishDir "${pubdir}", mode: 'link'
+    // publishDir "${pubdir}", mode: 'link'
 
     input:
     tuple val(label), path(parfile), path(data), val(pubdir)
@@ -17,9 +17,9 @@ process DSPSR {
     script:
     if (is_vdif)
         """
-        threads_per_core=\$(lscpu | grep 'Thread(s) per core' | awk '{print \$4}')
-        [[ ! -z "\$threads_per_core" ]] || exit 1
-        [[ ! "\$threads_per_core" =~ [^0-9] ]] || exit 1
+        export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+        export OMP_PLACES=cores
+        export OMP_PROC_BIND=close
 
         nbin=\$(get_optimal_nbin ${parfile} ${nbin} ${nfine} 1)
         rv=\$?
@@ -27,49 +27,51 @@ process DSPSR {
 
         arfiles=()
         for hdrfile in *.hdr; do
-            dspsr \\
-                -t \$((SLURM_CPUS_PER_TASK * threads_per_core)) \\
-                -U 8192 \\
-                -E ${parfile} \\
-                -b \$nbin \\
-                -F ${nfine}:D \\
-                -L ${tint} -A \\
-                -O "\${hdrfile%.hdr}" \\
-                "\$hdrfile"
+            srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
+                dspsr \\
+                    -t \$OMP_NUM_THREADS \\
+                    -U 6144 \\
+                    -E ${parfile} \\
+                    -b \$nbin \\
+                    -F ${nfine}:D \\
+                    -L ${tint} -A \\
+                    -O "\${hdrfile%.hdr}" \\
+                    "\$hdrfile"
             arfiles+=("\${hdrfile%.hdr}.ar")
         done
-        psradd -R -o "${label}.ar" \${arfiles[@]}
+        srun -N 1 -n 1 -c 1 psradd -R -o "${label}.ar" \${arfiles[@]}
         rm \${arfiles[@]}
 
         # Dedisperse (apply channel delays)
-        pam -D -m "${label}.ar"
+        srun -N 1 -n 1 -c 1 pam -D -m "${label}.ar"
 
         # Reset the RM to zero
-        pam --RM 0 -m "${label}.ar"
+        srun -N 1 -n 1 -c 1 pam --RM 0 -m "${label}.ar"
         """
     else
         """
-        threads_per_core=\$(lscpu | grep 'Thread(s) per core' | awk '{print \$4}')
-        [[ ! -z "\$threads_per_core" ]] || exit 1
-        [[ ! "\$threads_per_core" =~ [^0-9] ]] || exit 1
+        export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+        export OMP_PLACES=cores
+        export OMP_PROC_BIND=close
 
         nbin=\$(get_optimal_nbin ${parfile} ${nbin} ${nfine} ${ncoarse})
         rv=\$?
         [[ rv -ne 0 ]] && exit \$rv
 
-        dspsr \\
-            -t \$((SLURM_CPUS_PER_TASK * threads_per_core)) \\
-            -U 8192 \\
-            -E ${parfile} \\
-            -b \$nbin \\
-            -F ${nfine*ncoarse}:D -K \\
-            -L ${tint} -A \\
-            -O "${label}" \\
-            -cont \\
-            -scloffs \\
-            *.fits
+        srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
+            dspsr \\
+                -t \$OMP_NUM_THREADS \\
+                -U 6144 \\
+                -E ${parfile} \\
+                -b \$nbin \\
+                -F ${nfine*ncoarse}:D -K \\
+                -L ${tint} -A \\
+                -O "${label}" \\
+                -cont \\
+                -scloffs \\
+                *.fits
 
         # Reset the RM to zero
-        pam --RM 0 -m "${label}.ar"
+        srun -N 1 -n 1 -c 1 pam --RM 0 -m "${label}.ar"
         """
 }

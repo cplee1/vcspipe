@@ -17,22 +17,19 @@ process PREPFOLD {
 
     script:
     """
-    threads_per_core=\$(lscpu | grep 'Thread(s) per core' | awk '{print \$4}')
-    [[ ! -z "\$threads_per_core" ]] || exit 1
-    [[ ! "\$threads_per_core" =~ [^0-9] ]] || exit 1
-
-    export OMP_NUM_THREADS=\$((SLURM_CPUS_PER_TASK * threads_per_core))
-    export OMP_PLACES=threads
+    export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+    export OMP_PLACES=cores
     export OMP_PROC_BIND=close
 
-    prepfold \\
-        -ncpus \$OMP_NUM_THREADS \\
-        -par ${parfile} \\
-        -n ${nbin} \\
-        -nsub ${nsub} \\
-        -npart ${npart} \\
-        -o '${label}' \\
-        -noxwin \\
-        *.fits
+    srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
+        prepfold \\
+            -ncpus \$OMP_NUM_THREADS \\
+            -par ${parfile} \\
+            -n ${nbin} \\
+            -nsub ${nsub} \\
+            -npart ${npart} \\
+            -o '${label}' \\
+            -noxwin \\
+            *.fits
     """
 }

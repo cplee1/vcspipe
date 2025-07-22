@@ -16,11 +16,8 @@ process PDMP {
 
     script:
     """
-    pdmp \\
-        -ds 0.001 \\
-        -mc 96 \\
-        -g '${label}_pdmp.png'/png \\
-        '${archive}' \\
+    srun -N 1 -n 1 -c 1 \\
+        pdmp -ds 0.001 -mc 96 -g '${label}_pdmp.png'/png '${archive}' \\
         | tee '${label}_pdmp.log'
     
     P0_BC_ms=\$(grep 'Best BC Period' '${label}_pdmp.log' | awk '{print \$6}')
@@ -49,7 +46,7 @@ process PDMP {
     DM_err_sigma=\$(python -c "print(abs(int(\$DM_corr/\$DM_err*100)))")
     if [[ DM_err_sigma -gt 200 ]]; then
         echo "Updating the DM"
-        pam -d "\$DM" -m "\$out_archive"
+        srun -N 1 -n 1 -c 1 pam -d "\$DM" -m "\$out_archive"
     else
         echo 'No DM correction made'
     fi

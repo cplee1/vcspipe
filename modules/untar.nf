@@ -9,6 +9,6 @@ process UNTAR {
 
     script:
     """
-    tar xvmf ${tarball}
+    srun -N 1 -n 1 -c 1 tar xvmf ${tarball}
     """
 }

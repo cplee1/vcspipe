@@ -7,19 +7,22 @@ process RMSYNTH {
     tuple val(label), val(archive), val(pubdir)
 
     output:
-    tuple val(label), path('*_rm_prof.csv'), path('*_rm_phi.csv'), emit: results
+    tuple val(label), path('*results.toml'), emit: results
     path('*.png'), emit: plots
 
     script:
     """
-    singularity exec -B "\$PWD" ${params.tools_cont} pu-rmsynth \\
-        -c \\
-        -f 384 \\
-        -n 5000 \\
-        --rmres 0.1 \\
-        --rmlim 250 \\
-        --meas_rm_prof \\
-        --plot_pa \\
-        ${archive}
+    export NUMBA_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+
+    srun -N 1 -n 1 -c \$NUMBA_NUM_THREADS -m block:block:block \\
+        singularity exec -B "\$PWD" ${params.tools_cont} pu-rmsynth \\
+            -c \\
+            -f 384 \\
+            -n 5000 \\
+            --rmres 0.1 \\
+            --rmlim 250 \\
+            --meas_rm_prof \\
+            --plot_pa \\
+            ${archive}
     """
 }
