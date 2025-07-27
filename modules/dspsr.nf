@@ -30,7 +30,7 @@ process DSPSR {
             srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
                 dspsr \\
                     -t \$OMP_NUM_THREADS \\
-                    -U 6144 \\
+                    -U 1024 \\
                     -E ${parfile} \\
                     -b \$nbin \\
                     -F ${nfine}:D \\
@@ -61,10 +61,10 @@ process DSPSR {
         srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
             dspsr \\
                 -t \$OMP_NUM_THREADS \\
-                -U 6144 \\
+                -U 1024 \\
                 -E ${parfile} \\
                 -b \$nbin \\
-                -F ${nfine*ncoarse}:D -K \\
+                -K \\
                 -L ${tint} -A \\
                 -O "${label}" \\
                 -cont \\
