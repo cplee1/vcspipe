@@ -17,7 +17,7 @@ process PDMP {
     script:
     """
     srun -N 1 -n 1 -c 1 \\
-        pdmp -ds 0.001 -mc 96 -g '${label}_pdmp.png'/png '${archive}' \\
+        pdmp -ds 0.005 -mc 96 -g '${label}_pdmp.png'/png '${archive}' \\
         | tee '${label}_pdmp.log'
     
     P0_BC_ms=\$(grep 'Best BC Period' '${label}_pdmp.log' | awk '{print \$6}')
