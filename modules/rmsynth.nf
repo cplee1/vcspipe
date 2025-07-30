@@ -22,6 +22,7 @@ process RMSYNTH {
             --rmres 0.1 \\
             --rmlim 250 \\
             --meas_rm_prof \\
+            --meas_widths \\
             --plot_pa \\
             ${archive}
     """
