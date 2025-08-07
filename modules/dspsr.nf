@@ -4,7 +4,7 @@ process DSPSR {
     // publishDir "${pubdir}", mode: 'link'
 
     input:
-    tuple val(label), path(parfile), path(data), val(pubdir)
+    tuple val(label), path(data), path(parfile), val(pubdir)
     val(nbin)
     val(nfine)
     val(ncoarse)

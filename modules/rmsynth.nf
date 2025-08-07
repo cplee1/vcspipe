@@ -1,6 +1,8 @@
 process RMSYNTH {
     label 'cluster'
 
+    errorStrategy 'ignore'
+
     publishDir "${pubdir}/rmsynth", mode: 'link'
 
     input:

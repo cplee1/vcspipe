@@ -89,7 +89,17 @@ workflow BEAMFORM {
         file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}", type: 'dir')
     )
 
+    TAR.out.tarballs
+        // input: [Path('/path/to/name_obsid_begin_end.tar'), ...], ...
+        .flatten()
+        // => Path('/path/to/name_obsid_begin_end.tar'), ...
+        // assume that the name, obsid, and begin/end strings do not contain underscores
+        .map { [ it.baseName.split('_')[0], it.baseName.split('_')[1], it.baseName.split('_')[2], it.baseName.split('_')[3], it ] }
+        // => ['name', 'obsid', 'begin' ,'end', Path('/path/to/name_obsid_begin_end.tar')], ...
+        .map { [ it[0], it[1], "${it[2]}-${it[3]}", it[4] ] }
+        // => ['name', 'obsid', 'begin-end', Path('/path/to/name_obsid_begin_end.tar')], ...
+        .set { ch_beamformed_tarballs }
+
     emit:
-    targets = ch_targets
-    tarballs = TAR.out.tarballs
+    tarballs = ch_beamformed_tarballs
 }

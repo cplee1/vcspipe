@@ -4,8 +4,7 @@ process GET_OBS_METADATA {
     tuple val(name), path(data)
 
     output:
-    tuple val(name), env('obsid'), env('interval'), emit: targets
-    tuple val(name), path(data), emit: beamformed_data
+    tuple val(name), env('obsid'), env('interval'), path(data), emit: beamformed_data
 
     script:
     if (params.vdif)

@@ -1,6 +1,8 @@
 process FLUXCAL {
     label 'cluster'
 
+    errorStrategy 'ignore'
+
     publishDir "${pubdir}/fluxcal", mode: 'link'
 
     input:

@@ -1,10 +1,10 @@
 process GET_EPHEMERIS {
     
     input:
-    val(name)
+    tuple val(name), val(obsid), val(interval), val(data)
 
     output:
-    tuple val(name), path("${name}.eph"), emit: ephemeris
+    tuple val(name), val(obsid), val(interval), val(data), path("${name}.eph"), emit: ephemeris
 
     script:
     """

@@ -44,6 +44,5 @@ workflow STAGE_DATA {
     GET_OBS_METADATA(ch_beamformed_data)
 
     emit:
-    targets = GET_OBS_METADATA.out.targets
     data = GET_OBS_METADATA.out.beamformed_data
 }

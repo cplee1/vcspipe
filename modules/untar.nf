@@ -2,10 +2,10 @@ process UNTAR {
     label 'cluster'
 
     input:
-    tuple val(name), path(tarball)
+    tuple val(name), val(obsid), val(interval), path(tarball)
 
     output:
-    tuple val(name), path("${name}*/*"), emit: data
+    tuple val(name), val(obsid), val(interval), path("${name}*/*"), emit: data
 
     script:
     """
