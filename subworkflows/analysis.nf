@@ -33,7 +33,7 @@ workflow ANALYSIS {
         RMSYNTH(ch_rmsynth_input)
     }
 
-    if (params.fluxcal && params.rmsynth) {
+    if (params.fluxcal && params.rmsynth && params.calibrate) {
         FLUXCAL.out.results
             // input: ['label', Path('*_fluxcal_results.toml')], ...
             .cross(RMSYNTH.out.results)

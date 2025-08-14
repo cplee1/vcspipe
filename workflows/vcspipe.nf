@@ -4,8 +4,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { DOWNLOAD } from '../subworkflows/download'
-include { REDUCE   } from '../subworkflows/reduce'
+include { DOWNLOAD        } from '../subworkflows/download'
+include { REDUCE          } from '../subworkflows/reduce'
+include { ANALYSIS_PREP   } from '../subworkflows/analysis_prep'
+include { ANALYSIS        } from '../subworkflows/analysis'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,6 +24,9 @@ workflow VCSPIPE {
             DOWNLOAD ()
         } else if (params.reduce) {
             REDUCE ()
+        } else if (params.analysis) {
+            ANALYSIS_PREP ()
+            ANALYSIS (ANALYSIS_PREP.out.analysis_input)
         } else {
             error("Pipeline mode not specified. Please use either '--download' or '--reduce'.")
         }
