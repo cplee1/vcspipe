@@ -3,6 +3,8 @@ process PDMP {
 
     publishDir "${pubdir}", mode: 'link'
 
+    errorStrategy 'ignore'
+
     input:
     tuple val(label), path(archive), val(pubdir)
     val(max_chans)

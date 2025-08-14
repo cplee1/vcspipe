@@ -3,6 +3,8 @@ process DSPSR {
 
     // publishDir "${pubdir}", mode: 'link'
 
+    errorStrategy 'ignore'
+
     input:
     tuple val(label), path(data), path(parfile), val(pubdir)
     val(nbin)
