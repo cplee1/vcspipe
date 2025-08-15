@@ -25,6 +25,8 @@ process RMSYNTH {
             --rmlim 250 \\
             --meas_rm_prof \\
             --meas_widths \\
+            --plot_diagnostics \\
+            --plot_publn_prof \\
             --plot_pa \\
             ${archive}
     """
