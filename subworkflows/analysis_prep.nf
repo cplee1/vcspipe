@@ -4,6 +4,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { TRUNCATE_ARCHIVE } from '../modules/truncate_archive'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,10 +25,12 @@ workflow ANALYSIS_PREP {
         .of(params.targets.split(' '))
         .map { str -> str.split('@') }
         .map { tup -> [tup[0], file(tup[1], type: 'dir', checkIfExists: true)] }
-        .map { tup -> [tup[0], tup[1].baseName.split('_')[1], file("${tup[1].toString()}/*.arl.clfd.pdmp", type: 'file', checkIfExists: true), tup[1]] }
+        .map { tup -> [tup[0], tup[1].baseName.split('_')[1], file("${tup[1].toString()}/*.ar.clfd.pdmp", type: 'file', checkIfExists: true), tup[1]] }
         // => ['SrcName', 'obsID', Path(archive), Path(pubDir)]
         .set { ch_analysis_input }
 
+    TRUNCATE_ARCHIVE(ch_analysis_input)
+
     emit:
-    analysis_input = ch_analysis_input
+    analysis_input = TRUNCATE_ARCHIVE.out
 }
