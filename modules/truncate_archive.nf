@@ -1,6 +1,8 @@
 process TRUNCATE_ARCHIVE {
     label 'cluster'
 
+    publishDir "${pubdir}", mode: 'link'
+
     input:
     tuple val(srcname), val(obsid), path(archive), val(pubdir)
 
