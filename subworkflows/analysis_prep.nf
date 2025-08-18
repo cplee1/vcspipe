@@ -32,5 +32,5 @@ workflow ANALYSIS_PREP {
     TRUNCATE_ARCHIVE(ch_analysis_input)
 
     emit:
-    analysis_input = TRUNCATE_ARCHIVE.out
+    analysis_input = TRUNCATE_ARCHIVE.out.data
 }
