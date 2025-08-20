@@ -16,6 +16,15 @@ process RMSYNTH {
     """
     export NUMBA_NUM_THREADS=\$SLURM_CPUS_PER_TASK
 
+    if [[ -f '${pubdir}'/*rm_discard.txt ]]; then
+        dopt="--discard"
+        read -r dl dr < '${pubdir}'/*rm_discard.txt
+    else
+        dopt=""
+        dl=""
+        dr=""
+    fi
+
     srun -N 1 -n 1 -c \$NUMBA_NUM_THREADS -m block:block:block \\
         singularity exec -B "\$PWD" ${params.tools_cont} pu-rmsynth \\
             -c \\
@@ -28,6 +37,7 @@ process RMSYNTH {
             --plot_diagnostics \\
             --plot_publn_prof \\
             --plot_pa \\
+            \$dopt \$dl \$dr \\
             ${archive}
     """
 }
