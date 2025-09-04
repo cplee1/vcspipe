@@ -6,7 +6,7 @@ process FLUXCAL {
     publishDir "${pubdir}/fluxcal", mode: 'link'
 
     input:
-    tuple val(label), val(obsid), val(archive), val(pubdir)
+    tuple val(label), val(obsid), path(archive), val(pubdir)
 
     output:
     tuple val(label), path('*results.toml'), emit: results
