@@ -1,13 +1,10 @@
 process CLFD {
     label 'cluster'
 
-    publishDir = [
-        path: { "${pubdir}/dspsr" },
-        mode: 'link'
-    ]
+    publishDir "${pubdir}", mode: 'link'
 
     input:
-    tuple val(name), path(archive), val(pubdir)
+    tuple val(label), path(archive), val(pubdir)
 
     output:
     path('*.clfd'), emit: clfd_archive
@@ -15,6 +12,7 @@ process CLFD {
 
     script:
     """
-    clfd -o . -p \$SLURM_CPUS_PER_TASK ${archive}
+    srun -N 1 -n 1 -c \$SLURM_CPUS_PER_TASK -m block:block:block \\
+        clfd -p \$SLURM_CPUS_PER_TASK -o . ${archive}
     """
 }

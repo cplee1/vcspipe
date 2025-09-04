@@ -1,13 +1,12 @@
 process DSPSR {
     label 'cluster'
 
-    publishDir = [
-        path: { "${pubdir}/dspsr" },
-        mode: 'link'
-    ]
+    // publishDir "${pubdir}", mode: 'link'
+
+    errorStrategy 'ignore'
 
     input:
-    tuple val(name), path(parfile), path(data), val(pubdir)
+    tuple val(label), path(data), path(parfile), val(pubdir)
     val(nbin)
     val(nfine)
     val(ncoarse)
@@ -15,46 +14,66 @@ process DSPSR {
     val(is_vdif)
 
     output:
-    path("${name}.ar"), emit: archive
+    path("${label}.ar"), emit: archive
 
     script:
     if (is_vdif)
         """
+        export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+        export OMP_PLACES=cores
+        export OMP_PROC_BIND=close
+
         nbin=\$(get_optimal_nbin ${parfile} ${nbin} ${nfine} 1)
         rv=\$?
         [[ rv -ne 0 ]] && exit \$rv
 
         arfiles=()
         for hdrfile in *.hdr; do
-            dspsr \\
-                -U 8192 \\
-                -E ${parfile} \\
-                -b \$nbin \\
-                -F ${nfine}:D \\
-                -L ${tint} -A \\
-                -O "\${hdrfile%.hdr}" \\
-                "\$hdrfile"
+            srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
+                dspsr \\
+                    -t \$OMP_NUM_THREADS \\
+                    -U 1024 \\
+                    -E ${parfile} \\
+                    -b \$nbin \\
+                    -F ${nfine}:D \\
+                    -L ${tint} -A \\
+                    -O "\${hdrfile%.hdr}" \\
+                    "\$hdrfile"
             arfiles+=("\${hdrfile%.hdr}.ar")
         done
-        psradd -R -o "${name}.ar" \${arfiles[@]}
+        srun -N 1 -n 1 -c 1 psradd -R -o "${label}.ar" \${arfiles[@]}
         rm \${arfiles[@]}
-        pam -D -m "${name}.ar"
+
+        # Dedisperse (apply channel delays)
+        srun -N 1 -n 1 -c 1 pam -D -m "${label}.ar"
+
+        # Reset the RM to zero
+        srun -N 1 -n 1 -c 1 pam --RM 0 -m "${label}.ar"
         """
     else
         """
+        export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+        export OMP_PLACES=cores
+        export OMP_PROC_BIND=close
+
         nbin=\$(get_optimal_nbin ${parfile} ${nbin} ${nfine} ${ncoarse})
         rv=\$?
         [[ rv -ne 0 ]] && exit \$rv
 
-        dspsr \\
-            -cont \\
-            -scloffs \\
-            -U 8192 \\
-            -E ${parfile} \\
-            -b \$nbin \\
-            -F ${nfine*ncoarse}:D -K \\
-            -L ${tint} -A \\
-            -O "${name}" \\
-            *.fits
+        srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
+            dspsr \\
+                -t \$OMP_NUM_THREADS \\
+                -U 1024 \\
+                -E ${parfile} \\
+                -b \$nbin \\
+                -K \\
+                -L ${tint} -A \\
+                -O "${label}" \\
+                -cont \\
+                -scloffs \\
+                *.fits
+
+        # Reset the RM to zero
+        srun -N 1 -n 1 -c 1 pam --RM 0 -m "${label}.ar"
         """
 }

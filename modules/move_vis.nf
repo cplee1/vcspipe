@@ -2,7 +2,7 @@ process MOVE_VIS {
     tag "${job_id}"
 
     errorStrategy {
-        failure_reason = [
+        def failure_reason = [
             2: 'VCS directory does not exist',
             3: 'ASVO job directory does not exist',
             4: 'no fits files in job directory',
@@ -29,7 +29,7 @@ process MOVE_VIS {
     [[ \$(shopt -s nullglob; count '${dl_path}'/*.metafits) -gt 0 ]] || exit 5
 
     # Move the metafits and fits files
-    targetdir="${vcs_dir}/${params.obsid}/cal/${params.calid}"
+    targetdir="${params.vcs_dir}/${params.obsid}/cal/${params.calid}"
     mkdir -p "\$targetdir" || exit 6
     find '${dl_path}' -maxdepth 1 -name "*fits" -exec mv -t "\$targetdir" {} +
     """

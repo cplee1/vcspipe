@@ -4,10 +4,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PARSE_TARGETS   } from '../modules/parse_targets'
-include { PREPARE_INPUTS  } from '../modules/prepare_inputs'
-include { VCSBEAM         } from '../modules/vcsbeam'
-include { TAR             } from '../modules/tar'
 include { UNTAR           } from '../modules/untar'
 include { GET_EPHEMERIS   } from '../modules/get_ephemeris'
 include { DSPSR           } from '../modules/dspsr'
@@ -19,119 +15,61 @@ include { PREPFOLD        } from '../modules/prepfold'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    IMPORT SUBWORKFLOWS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+include { BEAMFORM   } from './beamform'
+include { STAGE_DATA } from './stage_data'
+include { ANALYSIS   } from './analysis'
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
 workflow REDUCE {
 
-    // The target names must either be pulsar J/B names or pointings in RA_DEC
-    // format (can be decimal or sexigesimal). Each target must be provided
-    // a begin and end time offset from the beginning of the observation in
-    // seconds, delineated from the target name by an '@' symbol.
-    // E.g. 'J0437-4715@3000-3600' or '04:37:15.90_-47:15:09.11@3000-3600'
-    Channel
-        // input: 'nameA@begin-end nameB@begin-end ...'
-        .of(params.targets.split(' '))
-        // => 'nameA@begin-end', 'nameB@begin-end', ...
-        .map { str -> str.split('@') }
-        // => ['nameA', 'begin-end'], ['nameB', 'begin-end'], ...
-        .set { ch_targets }
+    if (params.skip_bf) {
+        if (params.dspsr || params.prepfold) {
+            STAGE_DATA()
+            ch_beamformed_data = STAGE_DATA.out.data
+        }
+    } else {
+        BEAMFORM()
 
-    // The targets will be grouped by time interval to process as separate
-    // beamforming jobs.
-    ch_targets
-        // input: ['nameA', 'begin-end'], ['nameB', 'begin-end'], ...
-        .map { tup -> [ tup[1], tup[0] ] }
-        // => ['begin-end', 'nameA'], ['begin-end', 'nameB'], ...
-        .groupTuple()
-        // => ['begin-end', ['nameA', 'nameB']], ...
-        .set { ch_intervals }
-
-    PARSE_TARGETS(ch_intervals)
-
-    // The targets will be grouped into jobs of max size $params.num_beams.
-    // Therefore, in VDIF mode $params.num_beams must be set to 1.
-    PARSE_TARGETS.out.names_pointings
-        // input: names_pointings.csv
-        .splitCsv(skip: 1)
-        // => ['begin-end', 'name', 'ra', 'dec'], ...
-        .map { tup -> [tup[0], [tup[1], tup[2], tup[3]]] }
-        // => ['begin-end', ['name', 'ra', 'dec']], ...
-        .groupTuple(size: Integer.valueOf(params.num_beams), remainder: true)
-        // => ['begin-end', [['name', 'ra', 'dec'], ...]], ...
-        .map { tup -> [tup[0], GroovyCollections.transpose(tup[1])] }
-        // => ['begin-end', [['name', ...], ['ra', ...], ['dec', ...]]], ...
-        .map { tup -> [tup[0], tup[1][0], tup[1][1], tup[1][2]] }
-        // => ['begin-end', ['name', ...], ['ra', ...], ['dec', ...]], ...
-        .set { ch_interval_names_ra_dec }
-
-    PREPARE_INPUTS(ch_interval_names_ra_dec)
-
-    PREPARE_INPUTS.out.pointings
-        // input: ['begin-end', names_pointings.txt, pointings.txt], ...
-        .map { tup -> [tup[0].split('-'), tup[1], tup[2]] }
-        // => [['begin', 'end'], names_pointings.txt, pointings.txt], ...
-        .map { tup -> [Integer.valueOf(tup[0][0]), Integer.valueOf(tup[0][1]), tup[1], tup[2]] }
-        // => [Integer(begin), Integer(end), names_pointings.txt, pointings.txt], ...
-        .set { ch_pointings }
-    
-    VCSBEAM (
-        ch_pointings,
-        Integer.valueOf(params.low_chan),
-        file("${params.vcs_dir}/${params.obsid}/combined", type: 'dir', checkIfExists: true),
-        file("${params.vcs_dir}/${params.obsid}/${params.obsid}.metafits", checkIfExists: true),
-        file("${params.vcs_dir}/${params.obsid}/cal/${params.calid}/${params.calid}.metafits", checkIfExists: true),
-        file("${params.vcs_dir}/${params.obsid}/cal/${params.calid}/hyperdrive/hyperdrive_solutions.bin", checkIfExists: true),
-        params.vdif
-    )
-
-    // Combining the beamformed data into tarballs allows us to split up the
-    // output for multiple targets, which lets us process them separately and
-    // publish them in separate directories.
-    TAR (
-        VCSBEAM.out.beamformed_data,
-        Integer.valueOf(params.obsid),
-        params.vdif,
-        file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}", type: 'dir')
-    )
+        if (params.dspsr || params.prepfold) {
+            UNTAR(BEAMFORM.out.tarballs)
+            ch_beamformed_data = UNTAR.out.data
+        }
+    }
 
     if (params.dspsr || params.prepfold) {
         // Post-process beamformed data
 
-        TAR.out.tarballs
-            // input: [Path('/path/to/name_obsid_begin_end.tar'), ...], ...
-            .flatten()
-            // => Path('/path/to/name_obsid_begin_end.tar'), ...
-            // assume that the name does not have any underscores
-            .map { [ it.baseName.split('_')[0], it ] }
-            // => ['name', Path('/path/to/name_obsid_begin_end.tar')], ...
-            .set { ch_beamformed_data }
+        ch_beamformed_data
+            // input: ['name', 'obsid', 'begin-end', Path(data)], ...
+            .map { [ it[0], it[1], it[2].split("-"), it[3] ] }
+            // => ['name', 'obsid', ['begin', 'end'], Path(data)], ...
+            .map { [ it[0], it[1], "${it[2][0].padLeft(4, '0')}_${it[2][1].padLeft(4, '0')}", it[3] ] }
+            // => ['nameA', 'obsid', 'begin_end', Path(data)], ...
+            .set { ch_beamformed_data_zp }
 
-        UNTAR(ch_beamformed_data)
-
-        ch_interval_names_ra_dec
-            // input: ['begin-end', ['name', ...], ['ra', ...], ['dec', ...]], ...
-            .map { it[1] }
-            // => ['name', ...], ...
-            .flatten()
-            // => 'name', ...
-            .set { ch_names }
-
-        GET_EPHEMERIS(ch_names)
+        GET_EPHEMERIS(ch_beamformed_data_zp)
 
         GET_EPHEMERIS.out.ephemeris
-            // input: ['name', Path('/path/to/name.eph')], ...
-            .cross(UNTAR.out.data)
-            // => [['name', Path('/path/to/name.eph')], ['name', Path(data)]], ...
-            .map { [ it[0][0], it[0][1], it[1][1] ] }
-            // => ['name', Path('/path/to/name.eph'), Path(data)], ...
-            .cross(ch_targets)
-            // => [['name', Path('/path/to/name.eph'), Path(data)], ['name', 'begin-end']], ...
-            .map { [ it[0][0], it[1][1].replace('-', '_'), it[0][1], it[0][2] ] }
-            // => ['name', 'begin_end', Path('/path/to/name.eph'), Path(data)], ...
-            .map { name, interval, ephem, data -> [ name, ephem, data, file("${params.vcs_dir}/${params.obsid}/pointings_${params.timestamp}/${name}_${params.obsid}_${interval}", type: 'dir') ] }
-            // => ['name', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
+            // input: ['name', 'obsid', 'begin_end', Path(data), Path('/path/to/name.eph')], ...
+            .map { name, obsid, interval, data, ephem -> [ name, obsid, "${name}_${obsid}_${interval}", data, ephem ] }
+            // => ['name', 'obsid', 'label', Path(data), Path('/path/to/name.eph')], ...
+            .map { _name, obsid, label, data, ephem -> [ label, obsid, data, ephem, file("${params.vcs_dir}/${obsid}/pointings_${params.timestamp}/${label}", type: 'dir') ] }
+            // => ['label', 'obsid', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')], ...
+            .set { ch_all_input }
+
+        ch_all_input
+            // input: ['label', 'obsid', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')], ...
+            .map { [ it[0], it[2], it[3], it[4] ] }
+            // => ['label', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')], ...
             .set { ch_fold_input }
 
         if (params.dspsr) {
@@ -145,13 +83,13 @@ workflow REDUCE {
             )
 
             DSPSR.out.archive
-                // input: Path('/path/to/name.ar'), ...
+                // input: Path('/path/to/label.ar'), ...
                 .map { [ it.baseName, it ] }
-                // => ['name', Path('/path/to/name.ar')]
+                // => ['label', Path('/path/to/label.ar')]
                 .cross(ch_fold_input)
-                // => [['name', Path('/path/to/name.ar')], ['name', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
+                // => [['label', Path('/path/to/label.ar')], ['label', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')]], ...
                 .map { [ it[0][0], it[0][1], it[1][3] ] }
-                // => ['name', Path('/path/to/name.ar'), Path('/path/to/pubdir')], ...
+                // => ['label', Path('/path/to/label.ar'), Path('/path/to/pubdir')], ...
                 .set { ch_archives }
 
             CLFD (ch_archives)
@@ -159,11 +97,11 @@ workflow REDUCE {
             CLFD.out.clfd_archive
                 // input: Path('/path/to/name.ar.clfd'), ...
                 .map { [ it.simpleName, it ] }
-                // => ['name', Path('/path/to/name.ar.clfd')], ...
+                // => ['label', Path('/path/to/label.ar.clfd')], ...
                 .cross(ch_fold_input)
-                // => [['name', Path('/path/to/name.ar.clfd')], ['name', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')]], ...
+                // => [['label', Path('/path/to/label.ar.clfd')], ['label', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')]], ...
                 .map { [ it[0][0], it[0][1], it[1][3] ] }
-                // => ['name', Path('/path/to/name.ar.clfd'), Path('/path/to/pubdir')]
+                // => ['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
                 .set { ch_clfd_archives }
 
             PAV (ch_clfd_archives)
@@ -175,23 +113,65 @@ workflow REDUCE {
                     Integer.valueOf(params.max_subints),
                 )
 
-                ch_fold_input
-                    // input: ['name', Path('/path/to/name.eph'), Path(data), Path('/path/to/pubdir')], ...
-                    .map { [ "${it[0]}_pdmp", it[3] ]}
-                    // => ['name_pdmp', Path('/path/to/pubdir')], ...
-                    .set { ch_pdmp_pubdir }
+                ch_all_input
+                    // input: ['label', 'obsid', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')], ...
+                    .map { [ it[0], it[4] ]}
+                    // => ['label', Path('/path/to/pubdir')], ...
+                    .set { ch_label_pubdir }
 
                 PDMP.out.archive
-                    // input: Path('/path/to/name_pdmp.ar'), ...
-                    .map { [ it.baseName, it ] }
-                    // => ['name_pdmp', Path('/path/to/name_pdmp.ar')], ...
-                    .cross(ch_pdmp_pubdir)
-                    // => [['name_pdmp', Path('/path/to/name_pdmp.ar')], ['name_pdmp', Path('/path/to/pubdir')]], ...
+                    // input: Path('/path/to/label.ar.clfd.pdmp'), ...
+                    .map { [ it.simpleName, it ] }
+                    // => ['label', Path('/path/to/label.ar.clfd.pdmp')], ...
+                    .cross(ch_label_pubdir)
+                    // => [['label', Path('/path/to/label.ar.clfd.pdmp')], ['label', Path('/path/to/pubdir')]], ...
                     .map { [ it[0][0], it[0][1], it[1][1] ] }
-                    // => ['name_pdmp', Path('/path/to/name_pdmp.ar'), Path('/path/to/pubdir')], ...
+                    // => ['label', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
                     .set { ch_pdmp_archives }
 
-                PAV_PDMP (ch_pdmp_archives)
+                ch_pdmp_archives
+                    // input: ['label', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
+                    .map { [ "${it[0]}_pdmp", it[1], it[2] ] }
+                    // => ['label_pdmp', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
+                    .set { ch_pdmp_archives_relabel }
+
+                PAV_PDMP (ch_pdmp_archives_relabel)
+
+                if (params.fluxcal || params.rmsynth) {
+                    ch_all_input
+                        // input: ['label', 'obsid', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')], ...
+                        .map { [ it[0], it[1] ]}
+                        // => ['label', 'obsid'], ...
+                        .set { ch_label_obsid }
+
+                    ch_pdmp_archives
+                        // input: ['label', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
+                        .cross(ch_label_obsid)
+                        // => [['label', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ['label', 'obsid']], ...
+                        .map { [ it[0][0], it[1][1], it[0][1], it[0][2] ] }
+                        // => ['label', 'obsid', Path('/path/to/label.ar.clfd.pdmp'), Path('/path/to/pubdir')], ...
+                        .set { ch_analysis_input }
+
+                    ANALYSIS(ch_analysis_input)
+                }
+            } else {
+                if (params.fluxcal || params.rmsynth) {
+                    ch_all_input
+                        // input: ['label', 'obsid', Path(data), Path('/path/to/name.eph'), Path('/path/to/pubdir')], ...
+                        .map { [ it[0], it[1] ] }
+                        // => ['label', 'obsid'], ...
+                        .set { ch_label_obsid }
+
+                    ch_clfd_archives
+                        // input: ['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
+                        .cross(ch_label_obsid)
+                        // => [['label', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ['label', 'obsid']], ...
+                        .map { [ it[0][0], it[1][1], it[0][1], it[0][2] ] }
+                        // => ['label', 'obsid', Path('/path/to/label.ar.clfd'), Path('/path/to/pubdir')], ...
+                        .set { ch_analysis_input }
+
+                    ANALYSIS(ch_clfd_archives)
+                }
             }
         }
 

@@ -1,15 +1,12 @@
 process PREPFOLD {
     label 'cluster'
 
-    publishDir = [
-        path: { "${pubdir}/prepfold" },
-        mode: 'link'
-    ]
+    publishDir "${pubdir}", mode: 'link'
 
     errorStrategy 'ignore'
 
     input:
-    tuple val(name), path(parfile), path(data), val(pubdir)
+    tuple val(label), path(data), path(parfile), val(pubdir)
     val(nbin)
     val(nsub)
     val(npart)
@@ -20,13 +17,19 @@ process PREPFOLD {
 
     script:
     """
-    OMP_NUM_THREADS=${task.cpus} prepfold \\
-        -ncpus ${task.cpus} \\
-        -par ${parfile} \\
-        -n ${nbin} \\
-        -nsub ${nsub} \\
-        -npart ${npart} \\
-        -noxwin \\
-        *.fits
+    export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+    export OMP_PLACES=cores
+    export OMP_PROC_BIND=close
+
+    srun -N 1 -n 1 -c \$OMP_NUM_THREADS -m block:block:block \\
+        prepfold \\
+            -ncpus \$OMP_NUM_THREADS \\
+            -par ${parfile} \\
+            -n ${nbin} \\
+            -nsub ${nsub} \\
+            -npart ${npart} \\
+            -o '${label}' \\
+            -noxwin \\
+            *.fits
     """
 }

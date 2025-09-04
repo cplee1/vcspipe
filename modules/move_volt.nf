@@ -2,7 +2,7 @@ process MOVE_VOLT {
     tag "${job_id}"
 
     errorStrategy {
-        failure_reason = [
+        def failure_reason = [
             2: 'VCS directory does not exist',
             3: 'ASVO job directory does not exist',
             4: 'could not create target directory',

@@ -1,36 +1,56 @@
 process PDMP {
     label 'cluster'
 
-    publishDir = [
-        path: { "${pubdir}/pdmp" },
-        mode: 'link'
-    ]
+    publishDir "${pubdir}", mode: 'link'
+
+    errorStrategy 'ignore'
 
     input:
-    tuple val(name), path(archive), val(pubdir)
+    tuple val(label), path(archive), val(pubdir)
     val(max_chans)
     val(max_subints)
 
     output:
-    path("${name}_pdmp.ar"), emit: archive
-    path("${name}_pdmp.png"), emit: plot
-    path("${name}_pdmp.log"), emit: log
+    path("*.ar*.pdmp"), emit: archive
+    path("${label}_pdmp.png"), emit: plot
+    path("${label}_pdmp.log"), emit: log
+    path("${label}_pdmp.csv"), emit: results
 
     script:
     """
-    pdmp \\
-        -ds 0.001 \\
-        -g '${name}_pdmp.png'/png \\
-        '${archive}' \\
-        | tee '${name}_pdmp.log'
+    srun -N 1 -n 1 -c 1 \\
+        pdmp -ds 0.005 -mc 96 -g '${label}_pdmp.png'/png '${archive}' \\
+        | tee '${label}_pdmp.log'
     
-    # Parse P0/DM
-    P0_ms=\$(grep 'Best TC Period' '${name}_pdmp.log' | awk '{print \$6}')
-    P0_s=\$(printf '%.10f' \$(echo "scale=10; \$P0_ms / 1000" | bc))
-    DM=\$(grep 'Best DM' '${name}_pdmp.log' | awk '{print \$4}')
+    P0_BC_ms=\$(grep 'Best BC Period' '${label}_pdmp.log' | awk '{print \$6}')
+    P0_BC_corr_ms=\$(grep 'Best BC Period' '${label}_pdmp.log' | awk '{print \$10}')
+    P0_BC_err_ms=\$(grep 'Best BC Period' '${label}_pdmp.log' | awk '{print \$14}')
 
-    # Apply new P0/DM to new archive
-    cp -L '${archive}' '${name}_pdmp.ar'
-    pam --period "\$P0_s" -d "\$DM" -m '${name}_pdmp.ar'
+    P0_TC_ms=\$(grep 'Best TC Period' '${label}_pdmp.log' | awk '{print \$6}')
+    P0_TC_corr_ms=\$(grep 'Best TC Period' '${label}_pdmp.log' | awk '{print \$10}')
+    P0_TC_err_ms=\$(grep 'Best TC Period' '${label}_pdmp.log' | awk '{print \$14}')
+
+    DM=\$(grep 'Best DM' '${label}_pdmp.log' | awk '{print \$4}')
+    DM_corr=\$(grep 'Best DM' '${label}_pdmp.log' | awk '{print \$7}')
+    DM_err=\$(grep 'Best DM' '${label}_pdmp.log' | awk '{print \$10}')
+
+    results='${label}_pdmp.csv'
+    echo "param,val,corr,err" | tee "\$results"
+    echo "P0_BC_ms,\$P0_BC_ms,\$P0_BC_corr_ms,\$P0_BC_err_ms" | tee -a "\$results"
+    echo "P0_TC_ms,\$P0_TC_ms,\$P0_TC_corr_ms,\$P0_TC_err_ms" | tee -a "\$results"
+    echo "DM,\$DM,\$DM_corr,\$DM_err" | tee -a "\$results"
+
+    # Duplicate the archive
+    out_archive='${archive}.pdmp'
+    cp -L '${archive}' "\$out_archive"
+
+    # Apply DM correction if needed
+    DM_err_sigma=\$(python -c "print(abs(int(\$DM_corr/\$DM_err*100)))")
+    if [[ DM_err_sigma -gt 200 ]]; then
+        echo "Updating the DM"
+        srun -N 1 -n 1 -c 1 pam -d "\$DM" -m "\$out_archive"
+    else
+        echo 'No DM correction made'
+    fi
     """
 }

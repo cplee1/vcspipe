@@ -10,11 +10,6 @@ def help_message() {
         """.stripMargin()
 }
 
-if (params.help) {
-    help_message()
-    exit(0)
-}
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT WORKFLOWS
@@ -32,6 +27,11 @@ include { VCSPIPE } from './workflows/vcspipe'
 workflow {
 
     main:
+
+    if (params.help) {
+        help_message()
+        exit(0)
+    }
 
     VCSPIPE ()
 }
