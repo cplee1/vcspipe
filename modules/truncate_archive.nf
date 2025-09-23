@@ -12,12 +12,21 @@ process TRUNCATE_ARCHIVE {
 
     script:
     """
+    # Assume the archive filename is JNAME_OBSID_START_END.*
+    archive=\$(basename '${archive}')
+    label=\${archive%%.*}
+    IFS=_ read -r jname obsid ar_start ar_end <<< "\$label"
+
+    ar_start_frac=\$(printf '%.5f' \$(echo "\$ar_start / 4800" | bc -l))
+    ar_end_frac=\$(printf '%.5f' \$(echo "\$ar_end / 4800" | bc -l))
+
     # note: source-finder will exit 1 if the source is not in the beam
     singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} source-finder \\
         -s '${srcname}' \\
         -o '${obsid}' \\
+        --start "\$ar_start_frac" \\
+        --end "\$ar_end_frac" \\
         --min_power 0.2 \\
-        --time_plot \\
         || exit 1
 
     outfile='${srcname}_truncation_info.txt'
