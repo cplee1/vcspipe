@@ -19,7 +19,7 @@ process DSPSR {
     script:
     if (is_vdif)
         """
-        export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+        export OMP_NUM_THREADS='${params.dspsr_cpus}'
         export OMP_PLACES=cores
         export OMP_PROC_BIND=close
 
@@ -52,7 +52,7 @@ process DSPSR {
         """
     else
         """
-        export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+        export OMP_NUM_THREADS='${params.dspsr_cpus}'
         export OMP_PLACES=cores
         export OMP_PROC_BIND=close
 
