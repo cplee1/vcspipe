@@ -40,7 +40,7 @@ process RMSYNTH {
             -f 384 \\
             -n 5000 \\
             --rmres 0.1 \\
-            --rmlim 250 \\
+            --rmlim 300 \\
             --meas_rm_prof \\
             --meas_widths \\
             --plot_diagnostics \\
