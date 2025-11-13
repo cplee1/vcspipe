@@ -142,6 +142,9 @@ def main() -> None:
         entry = [args.label, target, raj, decj]
         entries.append(entry)
 
+    if len(entries) == 0:
+        exit(1)
+
     with open(args.outfile, "w") as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=",")
         spamwriter.writerow(["label", "name", "raj", "decj"])
