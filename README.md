@@ -17,7 +17,7 @@ python -m pip install numpy psrqpy
 ## Usage
 In general, the pipeline can be executed with:
 ```bash
-nextflow run -latest cplee1/vcspipe -profile [PROFILES,...] [OPTIONS ...]
+nextflow run cplee1/vcspipe -profile [PROFILES,...] [OPTIONS ...]
 ```
 where `[PROFILES,...]` is a comma-separated list of Nextflow profiles defined in `nextflow.config`, and `[OPTIONS ...]` are the pipeline options, each of which begins with a double hypen (e.g. `--nbin 64`). The pipeline options only parse a single command line argument, so options with multiple inputs must be enclosed in quotes. For example, `--targets PSR1 PSR2` will only parse `'PSR1'`, whereas `--targets 'PSR1 PSR2'` will parse the string `'PSR1 PSR2'`.
 
@@ -29,7 +29,7 @@ Before you use the download pipeline, ensure that you have defined the `$MWA_ASV
 
 A typical execution of the `--download` workflow looks like:
 ```bash
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix \
     --download \
     --obsid OBSID \
@@ -44,11 +44,11 @@ The first time that the `--download` workflow is executed, it will submit the jo
 An example workflow on Setonix may look like:
 ```bash
 # Environment setup
-module load nextflow/24.04.3
-module load giant-squid/1.0.3
+module load nextflow/24.04.6
+module load giant-squid/2.3.0
 
 # First execution (queue ASVO jobs)
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix \
     --download \
     --obsid 1267459328 \
@@ -60,7 +60,7 @@ nextflow run -latest cplee1/vcspipe \
 giant-squid list
 
 # Second execution (move files to $vcs_dir/$obsid)
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix \
     --download \
     --obsid 1267459328 \
@@ -79,16 +79,16 @@ Before you use start processing the data, **it is essential that all of the data
 | Calibration metadata | ${calid}.metafits        | ${vcs_dir}/cal/${calid}/            |
 | Calibration solution | hyperdrive_solutions.bin | ${vcs_dir}/cal/${calid}/hyperdrive/ |
 
-In general, there are two situation in which the `--reduce` workflow is useful:
+In general, there are two situations in which the `--reduce` workflow is useful:
 
 1. You want to beamform and fold on a known, catalogued pulsar
 2. You want to beamform on a pointing without any post-processing
 
-In both cases, you must specify whether you want the pipeline to process the data in PSRFITS or VDIF format. This is done by selecting _either_ the `psrfits` _or_ the `vdif` profile upon execution. PSRFITS data can be post-processed with `--prepfold` and/or `--dspsr' and '--pdmp`, whereas VDIF data can _only_ be post-processed with `--dspsr/--pdmp`.
+In both cases, you must specify whether you want the pipeline to process the data in PSRFITS or VDIF format. This is done by selecting _either_ the `psrfits` _or_ the `vdif` profile upon execution. PSRFITS data can be post-processed with `--prepfold` and/or `--dspsr` and `--pdmp`, whereas VDIF data can _only_ be post-processed with `--dspsr/--pdmp`.
 
 A typical pulsar-mode `--reduce` execution for PSRFITS data looks like:
 ```bash
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix,psrfits \
     --obsid OBSID \
     --low_chan LOWCHAN \
@@ -98,7 +98,7 @@ nextflow run -latest cplee1/vcspipe \
 ```
 Wheras for VDIF data a typical execution looks like:
 ```bash
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix,vdif \
     --obsid OBSID \
     --low_chan LOWCHAN \
@@ -118,10 +118,10 @@ Lets say you want to beamform on two normal pulsars in the first 10 minutes of S
 screes -S beamforming
 
 # Environment setup
-module load nextflow/24.04.3
+module load nextflow/24.04.6
 
 # Run the pipeline
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix,psrfits,smart \
     --obsid 1255444104 \
     --calid 1255443816 \
@@ -136,7 +136,7 @@ screen -r beamforming
 
 If you are beamforming on a pointing without any intention to post-process (such as a pulsar candidate), the command may look like:
 ```bash
-nextflow run -latest cplee1/vcspipe \
+nextflow run cplee1/vcspipe \
     -profile setonix,psrfits,smart \
     --obsid 1255444104 \
     --calid 1255443816 \
