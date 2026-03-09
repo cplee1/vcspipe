@@ -20,12 +20,12 @@ process FLUXCAL {
         singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} fluxcal \\
             -m '${obsid}.metafits' \\
             -a '${archive}' \\
-            --fine_res 2 \\
-            --coarse_res 10 \\
-            --max_pix_per_job 1000000 \\
-            --nfreq 4 \\
-            --ntime 4 \\
-            --bw_flagged 0.125 \\
+            --fine_res '${params.fluxcal_fres}' \\
+            --coarse_res '${params.fluxcal_cres}' \\
+            --max_pix_per_job '${params.fluxcal_pixperjob}' \\
+            --nfreq '${params.fluxcal_nfreq}' \\
+            --ntime '${params.fluxcal_ntime}' \\
+            --bw_flagged '${params.fluxcal_bw_flagged}' \\
             --plot_profile \\
             --plot_pb \\
             --plot_3d

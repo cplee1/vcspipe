@@ -37,10 +37,11 @@ process RMSYNTH {
     srun -N 1 -n 1 -c \$NUMBA_NUM_THREADS -m block:block:block \\
         singularity exec -B "\$PWD" ${params.tools_cont} pu-rmsynth \\
             -c \\
-            -f 384 \\
-            -n 5000 \\
-            --rmres 0.1 \\
-            --rmlim 300 \\
+            -f '${params.rmsynth_nchan}' \\
+            -n '${params.rmsynth_nsamp}' \\
+            --rmres '${params.rmsynth_rmres}' \\
+            --rmmin '${params.rmsynth_rmmin}' \\
+            --rmmax '${params.rmsynth_rmmax}' \\
             --meas_rm_prof \\
             --meas_widths \\
             --plot_diagnostics \\
