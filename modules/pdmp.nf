@@ -18,8 +18,15 @@ process PDMP {
 
     script:
     """
+    prior_P0_ms=\$(vap -nc period '${archive}' | awk '{print \$2}')
+    if [[ \$(echo "\$prior_P0_ms < 100" | bc) ]]; then
+        dm_stepsize=0.001
+    else
+        dm_stepsize=0.005
+    fi
+
     srun -N 1 -n 1 -c 1 \\
-        pdmp -ds 0.005 -mc 96 -g '${label}_pdmp.png'/png '${archive}' \\
+        pdmp -ds "\$dm_stepsize" -mc 96 -ms 100 -mb 256 -g '${label}_pdmp.png'/png '${archive}' \\
         | tee '${label}_pdmp.log'
     
     P0_BC_ms=\$(grep 'Best BC Period' '${label}_pdmp.log' | awk '{print \$6}')
@@ -44,11 +51,22 @@ process PDMP {
     out_archive='${archive}.pdmp'
     cp -L '${archive}' "\$out_archive"
 
-    # Apply DM correction if needed
-    DM_err_sigma=\$(python -c "print(abs(int(\$DM_corr/\$DM_err*100)))")
+    # Apply period correction if >2-sigma
+    P0_TC_err_sigma=\$(python -c "print(int(abs(\$P0_TC_corr_ms/\$P0_TC_err_ms*100)))")
+    if [[ P0_TC_err_sigma -gt 200 ]]; then
+        P0_TC_s=\$(python -c "print(\$P0_TC_ms/1000)")
+        echo "Updating the TC period to \$P0_TC_s"
+        srun -N 1 -n 1 -c 1 pam --period "\$P0_TC_s" -m "\$out_archive"
+    else
+        echo 'No period correction made'
+    fi
+
+    # Apply DM correction if >2-sigma
+    DM_err_sigma=\$(python -c "print(int(abs(\$DM_corr/\$DM_err*100)))")
     if [[ DM_err_sigma -gt 200 ]]; then
-        echo "Updating the DM"
-        srun -N 1 -n 1 -c 1 pam -d "\$DM" -m "\$out_archive"
+        echo "Updating the DM to \$DM"
+        srun -N 1 -n 1 -c 1 pam --DD -m "\$out_archive"
+        srun -N 1 -n 1 -c 1 pam -d "\$DM" -D -m "\$out_archive"
     else
         echo 'No DM correction made'
     fi
