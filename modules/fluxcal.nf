@@ -17,7 +17,7 @@ process FLUXCAL {
     wget 'http://ws.mwatelescope.org/metadata/fits?obs_id=${obsid}' -O '${obsid}.metafits'
 
     srun -N 1 -n 1 -c \$SLURM_CPUS_PER_TASK -m block:block:block \\
-        singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} fluxcal \\
+        singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} pu-fluxcal \\
             -m '${obsid}.metafits' \\
             -a '${archive}' \\
             --fine_res '${params.fluxcal_fres}' \\
@@ -26,8 +26,14 @@ process FLUXCAL {
             --nfreq '${params.fluxcal_nfreq}' \\
             --ntime '${params.fluxcal_ntime}' \\
             --bw_flagged '${params.fluxcal_bw_flagged}' \\
-            --plot_profile \\
             --plot_pb \\
-            --plot_3d
+            --plot_3d \\
+            -o '${label}'
+
+    singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} pu-prof \\
+        --meas_widths \\
+        --plot_diagnostics \\
+        -o '${label}' \\
+        '${archive}'
     """
 }

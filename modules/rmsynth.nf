@@ -43,12 +43,11 @@ process RMSYNTH {
             --rmmin '${params.rmsynth_rmmin}' \\
             --rmmax '${params.rmsynth_rmmax}' \\
             --meas_rm_prof \\
-            --meas_widths \\
             --plot_diagnostics \\
-            --plot_publn_prof \\
             --plot_pa \\
             \$dopt \$dl \$dr \\
             \$zpopt \\
+            -o '${label}' \\
             ${archive}
     """
 }
