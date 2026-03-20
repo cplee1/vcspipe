@@ -20,6 +20,7 @@ process FLUXCAL {
         singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} pu-fluxcal \\
             -m '${obsid}.metafits' \\
             -a '${archive}' \\
+            -c \\
             --fine_res '${params.fluxcal_fres}' \\
             --coarse_res '${params.fluxcal_cres}' \\
             --max_pix_per_job '${params.fluxcal_pixperjob}' \\
@@ -31,6 +32,7 @@ process FLUXCAL {
             -o '${label}'
 
     singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} pu-prof \\
+        -c \\
         --meas_widths \\
         --plot_diagnostics \\
         -o '${label}' \\
