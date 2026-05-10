@@ -14,6 +14,14 @@ process FLUXCAL {
 
     script:
     """
+    if [ -f '${pubdir}'/*windowsize.txt ]; then
+        wopt='-w'
+        read -r wsize < '${pubdir}'/*windowsize.txt
+    else
+        wopt=''
+        wsize=''
+    fi
+
     wget 'http://ws.mwatelescope.org/metadata/fits?obs_id=${obsid}' -O '${obsid}.metafits'
 
     srun -N 1 -n 1 -c \$SLURM_CPUS_PER_TASK -m block:block:block \\
@@ -29,6 +37,7 @@ process FLUXCAL {
             --bw_flagged '${params.fluxcal_bw_flagged}' \\
             --plot_pb \\
             --plot_3d \\
+            \$wopt \$wsize \\
             -o '${label}'
 
     singularity exec -B "\$PWD,\$(dirname \$MWA_BEAM_FILE)" ${params.tools_cont} pu-prof \\
@@ -36,6 +45,7 @@ process FLUXCAL {
         --meas_widths \\
         --plot_diagnostics \\
         -o '${label}' \\
+        \$wopt \$wsize \\
         '${archive}'
     """
 }
