@@ -27,7 +27,7 @@ process GS_VIS {
     [[ \$(cat ready.tsv | wc -l) == 1 ]] && exit 0
 
     # Check if job is queued or processing
-    giant-squid list ${obsid} -j --types download_visibilities --states queued,staging,staged,retrieving,preprocessing,delivering \\
+    giant-squid list ${obsid} -j --types download_visibilities --states queued,staging,staged,preprocessing,delivering \\
         | jq -r '.[]|[.jobId,.jobState]|@csv' \\
         | tee processing.tsv
     [[ \$(cat processing.tsv | wc -l) == 1 ]] && exit 75

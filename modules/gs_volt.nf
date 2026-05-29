@@ -30,7 +30,7 @@ process GS_VOLT {
     [[ \$(cat ready.tsv | wc -l) == "${num_jobs}" ]] && exit 0
 
     # Check if jobs are queued or processing
-    giant-squid list ${obsid} -j --types download_voltage --states queued,staging,staged,retrieving,delivering \\
+    giant-squid list ${obsid} -j --types download_voltage --states queued,staging,staged,delivering \\
         | jq -r '.[]|[.jobId,.jobState]|@csv' \\
         | tee processing.tsv
     [[ \$(cat processing.tsv | wc -l) == "${num_jobs}" ]] && exit 75
