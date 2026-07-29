@@ -8,7 +8,7 @@ process GET_EPHEMERIS {
 
     script:
     """
-    ephem_dir="\${MYSOFTWARE}/resources/mtpa_par_files"
+    ephem_dir="${params.ephem_dir}"
     ephem_file="\${ephem_dir}/${name}.par"
 
     if [[ -r "\$ephem_file" ]]; then
